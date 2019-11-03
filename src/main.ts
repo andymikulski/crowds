@@ -13,10 +13,10 @@ import { FlowField, FlowFieldData } from "./AI/FlowField";
 import Vector from "./etc/Vector2D";
 
 const disp = new AgentDisplay(SCREEN_WIDTH, SCREEN_HEIGHT);
-const terrain = new TerrainDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, CELL_SIZE);
+const terrain = new TerrainDisplay(SCREEN_WIDTH, SCREEN_HEIGHT);
 terrain.draw();
-// terrain.drawGrid();
 terrain.drawWalkable();
+terrain.drawGrid();
 
 
 

@@ -1,5 +1,5 @@
 import PerlinNoise from '../etc/perlin';
-import { SCREEN_HEIGHT, SCREEN_WIDTH } from '../config';
+import { SCREEN_HEIGHT, SCREEN_WIDTH, CELL_SIZE } from '../config';
 
 export class TerrainDisplay {
   canvas: HTMLCanvasElement;
@@ -13,7 +13,7 @@ export class TerrainDisplay {
   walkablePath: boolean[][];
 
 
-  constructor(public width: number, public height: number, public cellSize: number = 5) {
+  constructor(public width: number, public height: number) {
     const canvas = document.createElement('canvas');
     canvas.setAttribute('class', 'terrain');
     canvas.width = width;
@@ -39,12 +39,12 @@ export class TerrainDisplay {
 
   public drawGrid() {
     this.context.beginPath();
-    this.context.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-    for (let y = 0; y < SCREEN_HEIGHT; y += this.cellSize) {
+    this.context.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+    for (let y = 0; y < SCREEN_HEIGHT; y += CELL_SIZE) {
       this.context.moveTo(0, y);
       this.context.lineTo(SCREEN_WIDTH, y);
     }
-    for (let x = 0; x < SCREEN_WIDTH; x += this.cellSize) {
+    for (let x = 0; x < SCREEN_WIDTH; x += CELL_SIZE) {
       this.context.moveTo(x, 0);
       this.context.lineTo(x, SCREEN_HEIGHT);
     }
@@ -53,14 +53,12 @@ export class TerrainDisplay {
   }
 
   public drawWalkable() {
-    // this.walkablePath = [];
-    for (let y = 0; y < SCREEN_HEIGHT; y += this.cellSize) {
-      // this.walkablePath[y] = [];
-      for (let x = 0; x < SCREEN_WIDTH; x += this.cellSize) {
+    this.context.strokeStyle = 'transparent';
+    for (let y = 0; y < SCREEN_HEIGHT; y += CELL_SIZE) {
+      for (let x = 0; x < SCREEN_WIDTH; x += CELL_SIZE) {
         let val = this.noise.perlin2(x * this.chaos, y * this.chaos);
         this.context.fillStyle = val < this.walkableThreshold ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255,0,0,0.25)';
-        this.context.fillRect(x - (this.cellSize / 2), y - (this.cellSize / 2), this.cellSize, this.cellSize);
-        // this.walkablePath[y].push(val < this.walkableThreshold);
+        this.context.fillRect(x - (CELL_SIZE / 2), y - (CELL_SIZE / 2), CELL_SIZE, CELL_SIZE);
       }
     }
   }

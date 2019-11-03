@@ -109,7 +109,7 @@ export class FlowField {
     for (let i = 0; i < toVisit.length; i++) {
       const neighbours = FlowField.getCellNeighbors(field, toVisit[i]);
 
-      //for each neighbour of this node (only straight line neighbours, not diagonals)
+      //for each neighbour of this node
       for (let j = 0; j < neighbours.length; j++) {
         const n = neighbours[j];
         // const terrainHeight = terrain.noise.perlin2(n.values[0] * terrain.chaos, n.values[1] * terrain.chaos);
