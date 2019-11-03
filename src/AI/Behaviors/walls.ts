@@ -8,17 +8,19 @@ export class WallBehavior {
   updateAgent(agent: DisplayTrait & MotionTrait) {
     const x = agent.position.values[0];
     const y = agent.position.values[1];
-    const size = agent.size / 2;
+    const size = agent.size * 2;
 
     if (!this.terrain.isWalkableAt(x + size, y)) {
       agent.acceleration.values[0] -= agent.maxSpeed;
-    } else if (!this.terrain.isWalkableAt(x - size, y)) {
+    }
+    if (!this.terrain.isWalkableAt(x - size, y)) {
       agent.acceleration.values[0] += agent.maxSpeed;
     }
 
     if (!this.terrain.isWalkableAt(x, y + size)) {
       agent.acceleration.values[1] -= agent.maxSpeed;
-    } else if (!this.terrain.isWalkableAt(x, y - size)) {
+    }
+    if (!this.terrain.isWalkableAt(x, y - size)) {
       agent.acceleration.values[1] += agent.maxSpeed;
     }
   }

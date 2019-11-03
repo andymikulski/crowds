@@ -9,13 +9,13 @@ const lerp = (start: number, end: number, percentAmount: number) => {
   const b = end * (1 - percentAmount);
   return Math.round(a + b);
 };
-export const mixColors = (hexColorA: string, hexColorB: string, mixPercent: number) => {
+export const mixColors = (hexColorA: string, hexColorB: string, mixPercent: number, alpha: number = 1) => {
   const rgbA = hexToRgb(hexColorA);
   const rgbB = hexToRgb(hexColorB);
   const r = lerp(rgbA[0], rgbB[0], mixPercent);
   const g = lerp(rgbA[1], rgbB[1], mixPercent);
   const b = lerp(rgbA[2], rgbB[2], mixPercent);
-  return `rgb(${r}, ${g}, ${b})`;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 function componentToHex(c: number) {
   var hex = c.toString(16);

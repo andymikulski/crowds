@@ -1,18 +1,32 @@
 import { PositionTrait, MotionTrait, DisplayTrait } from "../../traits";
-import { SCREEN_WIDTH, SCREEN_HEIGHT, WORLD_DEPTH, SCREEN_WIDTH_HALF } from "../../config";
-import Vector from "../../etc/Vector2D";
+import { SCREEN_WIDTH, SCREEN_HEIGHT, WORLD_DEPTH } from "../../config";
+import { TerrainDisplay } from "../../Display/TerrainDisplay";
+import { FlowField, FlowFieldData } from "../FlowField";
 import { FlockBehavior } from "../Flock";
+import Vector from "../../etc/Vector2D";
 
 export class FlowBehavior {
-	static updateAgent(agent: PositionTrait & MotionTrait & DisplayTrait) {
-		if (agent.color === '#f00') {
-			return FlockBehavior.seek(agent, new Vector([0, SCREEN_HEIGHT]));
-		} else if (agent.color === '#00f') {
-			return FlockBehavior.seek(agent, new Vector([SCREEN_WIDTH_HALF, 0]));
-		} else if (agent.color === '#222') {
-			return FlockBehavior.seek(agent, new Vector([SCREEN_WIDTH, SCREEN_HEIGHT]));
-		} else {
+	constructor(private field: FlowFieldData) { }
+
+	updateAgent(agent: DisplayTrait & MotionTrait) {
+		const x = agent.position.values[0];
+		const y = agent.position.values[1];
+		const dir = new Vector(FlowField.getDirectionAt(this.field, x, y));
+
+		if (!dir) {
 			return new Vector();
 		}
+
+		// dir.normalize();
+		// dir.mult(agent.maxSpeed);
+		return FlockBehavior.seek(agent, Vector.sub(dir, agent.position));
+
+		// if (!dir) {
+		// 	return new Vector();
+		// } else {
+		// 	return FlockBehavior.seek(agent,
+		// 		new Vector(agent.position).sub(new Vector(dir))
+		// 	);
+		// }
 	}
 }

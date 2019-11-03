@@ -1,14 +1,14 @@
 import PerlinNoise from '../etc/perlin';
-import { SCREEN_HEIGHT, SCREEN_WIDTH, CELL_SIZE } from '../config';
+import { SCREEN_HEIGHT, SCREEN_WIDTH, CELL_SIZE, TERRAIN_WALKABLE_THRESHOLD } from '../config';
 
 export class TerrainDisplay {
   canvas: HTMLCanvasElement;
   context: CanvasRenderingContext2D;
 
-  noise: PerlinNoise = new PerlinNoise(22555345);
+  noise: PerlinNoise = new PerlinNoise(266625345);
   chaos: number = 0.009;
 
-  walkableThreshold: number = 0.2;
+  walkableThreshold: number = TERRAIN_WALKABLE_THRESHOLD;
 
   walkablePath: boolean[][];
 

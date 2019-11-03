@@ -13,6 +13,7 @@ import { BoundaryBehavior } from './Behaviors/boundary';
 import { FlowBehavior } from './Behaviors/flow';
 import { WallBehavior } from './Behaviors/walls';
 import { TerrainDisplay } from '../Display/TerrainDisplay';
+import { FlowFieldData } from './FlowField';
 
 export type Agent = PositionTrait & MotionTrait & DisplayTrait;
 
@@ -22,8 +23,10 @@ export class AgentManager {
   public agentCount: number = 0;
 
   private wallBehavior: WallBehavior;
-  constructor(terrain: TerrainDisplay) {
+  private flowBehavior: FlowBehavior;
+  constructor(terrain: TerrainDisplay, private flowField: FlowFieldData) {
     this.wallBehavior = new WallBehavior(terrain);
+    this.flowBehavior = new FlowBehavior(flowField);
   }
 
   spawnAgent(index: number = 0, props: any = {}) {
@@ -32,10 +35,10 @@ export class AgentManager {
     const newWisp: Agent = {
       acceleration: new Vector(),
       position: new Vector([250 + Math.random(), 500 + Math.random(), 5]),
-      velocity: new Vector([Math.cos(angle), Math.sin(angle), 0]),
+      velocity: new Vector([0, 0, 0]), // new Vector([Math.cos(angle), Math.sin(angle), 0]),
       color: oddEven === 1 ? '#f00' : (oddEven === 2 ? '#00f' : '#222'),
       size: 5,
-      maxSpeed: Math.max(0.75, Math.random() * 1.5),
+      maxSpeed: Math.max(0.75, Math.random() * 1.25),
       maxForce: 0.15,
       ...props,
     };
@@ -49,11 +52,11 @@ export class AgentManager {
 
     // Flocking
     agent.acceleration.addMultiple(
-      FlowBehavior.updateAgent(agent).mult(1.45),
-      FlockBehavior.racism(agent, this.agents).mult(1.25),
-      FlockBehavior.separate(agent, this.agents).mult(2.25), // 1.5),
-      FlockBehavior.align(agent, this.agents).mult(0.8),
-      FlockBehavior.cohesion(agent, this.agents).mult(0.8),
+      this.flowBehavior.updateAgent(agent).mult(1),
+      // FlockBehavior.racism(agent, this.agents).mult(1.25),
+      // FlockBehavior.separate(agent, this.agents).mult(1.5), // 1.5),
+      // FlockBehavior.align(agent, this.agents).mult(0.8),
+      // FlockBehavior.cohesion(agent, this.agents).mult(0.8),
     );
 
     // Motion
@@ -61,7 +64,6 @@ export class AgentManager {
 
     // Lock agents inside the screen
     BoundaryBehavior.updateAgent(agent);
-
   }
 
   tick = () => {

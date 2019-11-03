@@ -87,7 +87,7 @@ export class FlockBehavior {
     let count = 0;
     for (let i = 0; i < agents.length; i++) {
       const other = agents[i];
-      if (other === currentAgent) { // } || other.color !== currentAgent.color) {
+      if (other === currentAgent || other.color !== currentAgent.color) {
         continue;
       }
 
@@ -116,9 +116,9 @@ export class FlockBehavior {
     for (let i = 0; i < agents.length; i++) {
       const other = agents[i];
       if (other === currentAgent) { continue; }
-      if (other.color !== currentAgent.color) {
-        continue;
-      }
+      // if (other.color !== currentAgent.color) {
+      //   continue;
+      // }
 
       const d: number = Vector.squaredDist(currentAgent.position, other.position);
       if (d < neighborThreshold) {
