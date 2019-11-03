@@ -5,7 +5,7 @@ export class TerrainDisplay {
   canvas: HTMLCanvasElement;
   context: CanvasRenderingContext2D;
 
-  noise: PerlinNoise = new PerlinNoise(555345);
+  noise: PerlinNoise = new PerlinNoise(22555345);
   chaos: number = 0.009;
 
   walkableThreshold: number = 0.2;
@@ -59,7 +59,7 @@ export class TerrainDisplay {
       for (let x = 0; x < SCREEN_WIDTH; x += this.cellSize) {
         let val = this.noise.perlin2(x * this.chaos, y * this.chaos);
         this.context.fillStyle = val < this.walkableThreshold ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255,0,0,0.25)';
-        this.context.fillRect(x, y, this.cellSize, this.cellSize);
+        this.context.fillRect(x - (this.cellSize / 2), y - (this.cellSize / 2), this.cellSize, this.cellSize);
         // this.walkablePath[y].push(val < this.walkableThreshold);
       }
     }
