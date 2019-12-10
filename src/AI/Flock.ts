@@ -9,22 +9,26 @@ const racismThreshold = 60 * 60;
 export class FlockBehavior {
 
   public static racism(currentAgent: DisplayTrait & MotionTrait, agents: (DisplayTrait & MotionTrait)[]): Vector {
-    const sum: Vector = new Vector();
+    const sum: Vector = Vector.get();
     let count = 0;
+    let speedDiff;
     for (let i = 0; i < agents.length; i++) {
       const other = agents[i];
-      if (other === currentAgent || other.color === currentAgent.color) {
+      speedDiff = currentAgent.velocity.squaredMagnitude() - other.velocity.squaredMagnitude();
+      if (speedDiff < 5 && speedDiff > -5) {
         continue;
       }
 
       const d: number = Vector.squaredDist(currentAgent.position, other.position);
       if (d < racismThreshold) {
         // racism
-        const diff: Vector = new Vector(currentAgent.position).sub(other.position).sub(Math.random() * 10);
+        const diff: Vector = Vector.get(currentAgent.position).sub(other.position).sub(Math.random() * 10);
         diff.normalize();
         diff.mult(d);
         sum.add(diff);
         count++;
+
+        Vector.free(diff);
       }
     }
 
@@ -32,17 +36,17 @@ export class FlockBehavior {
       sum.div(count);
       sum.normalize();
       sum.mult(currentAgent.currentSpeed);
-      return Vector.sub(sum, currentAgent.velocity).limit(currentAgent.maxForce);
-    }
-    else {
-      return new Vector();
+      const steer = Vector.sub(sum, currentAgent.velocity).limit(currentAgent.maxForce);
+      return steer;
+    } else {
+      return Vector.get();
     }
   }
 
   // Separation
   // Method checks for nearby boids and steers away
   public static separate(currentAgent: DisplayTrait & MotionTrait, agents: DisplayTrait[]): Vector {
-    const steer: Vector = new Vector();
+    const steer: Vector = Vector.get();
     let count = 0;
     // For every boid in the system, check if it's too close
     for (let i = 0; i < agents.length; i++) {
@@ -52,12 +56,13 @@ export class FlockBehavior {
       const d: number = Vector.squaredDist(currentAgent.position, other.position);
       if ((d > 0) && (d < seperationBuffer)) {
         // Calculate vector pointing away from neighbor
-        const diff: Vector = new Vector(currentAgent.position).sub(other.position);
+        const diff: Vector = Vector.get(currentAgent.position).sub(other.position);
         diff.normalize();
 
         diff.div(d);
         count++;            // Keep track of how many
         steer.add(diff);
+        Vector.free(diff);
       }
     }
     // Average -- divide by how many
@@ -77,13 +82,14 @@ export class FlockBehavior {
       steer.sub(currentAgent.velocity);
       steer.limit(currentAgent.maxForce);
     }
+
     return steer;
   }
 
   // Alignment
   // For every nearby boid in the system, calculate the average velocity
   public static align(currentAgent: DisplayTrait & MotionTrait, agents: (DisplayTrait & MotionTrait)[]): Vector {
-    const sum: Vector = new Vector();
+    const sum: Vector = Vector.get();
     let count = 0;
     for (let i = 0; i < agents.length; i++) {
       const other = agents[i];
@@ -104,14 +110,14 @@ export class FlockBehavior {
       return Vector.sub(sum, currentAgent.velocity).limit(currentAgent.maxForce);
     }
     else {
-      return new Vector();
+      return Vector.get();
     }
   }
 
   // Cohesion
   // For the average position (i.e. center) of all nearby boids, calculate steering vector towards that position
   public static cohesion(currentAgent: DisplayTrait & MotionTrait, agents: (DisplayTrait & MotionTrait)[]): Vector {
-    const sum: Vector = new Vector();   // Start with empty vector to accumulate all positions
+    const sum: Vector = Vector.get();   // Start with empty vector to accumulate all positions
     let count = 0;
     for (let i = 0; i < agents.length; i++) {
       const other = agents[i];
@@ -131,12 +137,12 @@ export class FlockBehavior {
       return FlockBehavior.seek(currentAgent, sum);  // Steer towards the position
     }
     else {
-      return new Vector();
+      return Vector.get();
     }
   }
 
   static seek(agent: DisplayTrait & MotionTrait, target: Vector): Vector {
-    const desired: Vector = new Vector(target);
+    const desired: Vector = Vector.get(target);
     desired.sub(agent.position);  // A vector pointing from the position to the target
 
     // Scale to maximum speed
@@ -148,7 +154,7 @@ export class FlockBehavior {
     // desired.setMag(currentSpeed);
 
     // Steering = Desired minus Velocity
-    const steering = new Vector(desired);
+    const steering = Vector.get(desired);
     steering.sub(agent.velocity);
     steering.limit(agent.maxForce);  // Limit to maximum steering force
     return steering;

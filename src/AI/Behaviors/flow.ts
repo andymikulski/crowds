@@ -9,24 +9,14 @@ export class FlowBehavior {
 	constructor(private field: FlowFieldData) { }
 
 	updateAgent(agent: DisplayTrait & MotionTrait) {
-		const pos = new Vector(agent.position);
+		const pos = Vector.get(agent.position);
 		const x = Math.round(pos.values[0]);
 		const y = Math.round(pos.values[1]);
-		const dir = new Vector(FlowField.getDirectionAt(this.field, x, y));
+		const dir = Vector.get(FlowField.getDirectionAt(this.field, x, y));
+		const steer = FlockBehavior.seek(agent, Vector.add(pos, dir));
 
+		Vector.free(pos, dir);
 
-		// dir.normalize();
-		// dir.mult(agent.maxSpeed);
-		// console.log('here...', 'raw dir:', JSON.stringify(FlowField.getDirectionAt(this.field, x, y)), '\nagent: ', JSON.stringify(agent), '\n\n', 'pos:', JSON.stringify(pos), '\n\n', 'dir:', JSON.stringify(dir), '\n\n', 'pos add dir: ', JSON.stringify(pos.add(dir)));
-		// throw new Error();
-		return FlockBehavior.seek(agent, pos.add(dir)); // Vector.sub(pos, dir));
-
-		// if (!dir) {
-		// 	return new Vector();
-		// } else {
-		// 	return FlockBehavior.seek(agent,
-		// 		new Vector(pos).sub(new Vector(dir))
-		// 	);
-		// }
+		return steer;
 	}
 }

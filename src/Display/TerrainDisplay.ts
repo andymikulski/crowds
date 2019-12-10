@@ -5,7 +5,11 @@ export class TerrainDisplay {
   canvas: HTMLCanvasElement;
   context: CanvasRenderingContext2D;
 
-  noise: PerlinNoise = new PerlinNoise(666666666664);
+  // noise: PerlinNoise = new PerlinNoise(666666666664);
+  noise: PerlinNoise = new PerlinNoise(66666666666444445);
+  // noise: PerlinNoise = new PerlinNoise(2424555212545255);
+  // noise: PerlinNoise = new PerlinNoise(66642424246664);
+  // noise: PerlinNoise = new PerlinNoise(131312121215555);
   chaos: number = 0.009555;
 
   walkableThreshold: number = TERRAIN_WALKABLE_THRESHOLD;

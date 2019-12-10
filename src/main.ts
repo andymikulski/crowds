@@ -1,3 +1,4 @@
+declare var requestIdleCallback:any;
 import * as dat from 'dat.gui';
 
 import {
@@ -14,6 +15,7 @@ import { TerrainDisplay } from "./Display/TerrainDisplay";
 import { FlowField, FlowFieldData } from "./AI/FlowField";
 import Vector from "./etc/Vector2D";
 import { mixColors } from "./etc/colorUtils";
+import Vector2D from './etc/Vector2D';
 
 const disp = new AgentDisplay(SCREEN_WIDTH, SCREEN_HEIGHT);
 const terrain = new TerrainDisplay(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -22,7 +24,7 @@ terrain.drawWalkable();
 terrain.drawGrid();
 
 const displayFlowFieldData = (data: FlowFieldData) => {
-  console.log('field generated', data);
+  // console.log('field generated', data);
   displayCostVisual(data);
   displayFlowVisual(data);
 }
@@ -88,19 +90,75 @@ const displayCostVisual = (data: FlowFieldData) => {
 
 
 const gui = new dat.GUI();
-gui.add(AgentManager.WEIGHTS, 'flow', 0, 10, 0.1);
-gui.add(AgentManager.WEIGHTS, 'separate', 0, 10, 0.1);
-gui.add(AgentManager.WEIGHTS, 'align', 0, 10, 0.1);
-gui.add(AgentManager.WEIGHTS, 'cohesion', 0, 10, 0.1);
+gui.add(AgentManager.WEIGHTS, 'racism', 0, 5, 0.05);
+gui.add(AgentManager.WEIGHTS, 'flow', 0, 5, 0.05);
+gui.add(AgentManager.WEIGHTS, 'separate', 0, 5, 0.05);
+gui.add(AgentManager.WEIGHTS, 'align', 0, 5, 0.05);
+gui.add(AgentManager.WEIGHTS, 'cohesion', 0, 5, 0.05);
+// const ok = ()=>{
+//   console.log('pool..', Vector2D.pool.length, Vector2D.totalCount, Vector2D.freeCount);
+//   requestIdleCallback(ok);
+// };
+// requestIdleCallback(ok);
+
+
+const seedPools = (num: number = 200000) => {
+  for(let i = 0; i < num; i ++ ){
+    Vector2D.pool.push(Vector2D.get());
+  }
+}
+
 
 const run = async () => {
-  const testFlow = await FlowField.generate(terrain, new Vector([SCREEN_WIDTH, SCREEN_HEIGHT_HALF]))
+  console.time('seed');
+  seedPools();
+  console.timeEnd('seed');
+
+  console.time('flowField');
+  const testFlow = await FlowField.generate(terrain, Vector.get([SCREEN_WIDTH, SCREEN_HEIGHT_HALF]))
+  console.timeEnd('flowField');
   displayFlowFieldData(testFlow);
 
+  // console.time('spawnAgents');
   const agentMan = new AgentManager(terrain, testFlow);
-  for (let i = 0; i < 150; i++) {
-    agentMan.spawnAgent(i);
-  }
+  let currentCount = 0;
+  // for (let i = 0; i < 2; i++) {
+  const ok = ()=>{
+    setTimeout(()=>{
+      agentMan.spawnAgent(currentCount);
+      currentCount += 1;
+      agentMan.spawnAgent(currentCount);
+      currentCount += 1;
+      agentMan.spawnAgent(currentCount);
+      currentCount += 1;
+      agentMan.spawnAgent(currentCount);
+      currentCount += 1;
+      agentMan.spawnAgent(currentCount);
+      currentCount += 1;
+      agentMan.spawnAgent(currentCount);
+      currentCount += 1;
+      agentMan.spawnAgent(currentCount);
+      currentCount += 1;
+      agentMan.spawnAgent(currentCount);
+      currentCount += 1;
+      agentMan.spawnAgent(currentCount);
+      currentCount += 1;
+      agentMan.spawnAgent(currentCount);
+      currentCount += 1;
+      agentMan.spawnAgent(currentCount);
+      currentCount += 1;
+      agentMan.spawnAgent(currentCount);
+      currentCount += 1;
+
+      if(currentCount > 250){ return; }
+      ok();
+    }, 100);
+  };
+
+  ok();
+
+  // }
+  // console.timeEnd('spawnAgents');
 
   const stepWorld = () => {
     agentMan.tick();
@@ -109,6 +167,7 @@ const run = async () => {
   };
   stepWorld();
 };
+
 
 run();
 

@@ -59,7 +59,7 @@ export class FlowField {
   }
 
   static getPosForIndex(field: FlowFieldData, index: number) {
-    return new Vector([index % field.width, Math.floor(index / field.width)]);
+    return Vector.get([index % field.width, Math.floor(index / field.width)]);
   }
 
   /**
@@ -73,9 +73,10 @@ export class FlowField {
 
     for (let y = -1; y <= 1; y++) {
       for (let x = -1; x <= 1; x++) {
-        // if (x === 0 && y === 0) { continue; }
+        // something funky here
+        if ((x === 0 && y === 0) || x === y ) { continue; }
         if (pos[0] + x >= 0 && pos[0] + x <= xMax && pos[1] + y >= 0 && pos[1] + y <= yMax) {
-          found.push(new Vector([node.position.values[0] + x, node.position.values[1] + y]));
+          found.push(Vector.get([pos[0] + x, pos[1] + y]));
         }
       }
     }
@@ -90,7 +91,7 @@ export class FlowField {
       flowCells: [],
       height: terrain.height,
       width: terrain.width,
-      origin: new Vector([0, 0]),
+      origin: Vector.get([0, 0]),
     };
   }
 
@@ -101,7 +102,7 @@ export class FlowField {
     const startPoint: DistNode = {
       distance: 0,
       index: FlowField.getIndexForPos(field, target.values[0], target.values[1]),
-      position: new Vector(target),
+      position: Vector.get(target),
     };
 
     //flood fill out from the end point
@@ -119,19 +120,20 @@ export class FlowField {
       for (let j = 0; j < neighbors.length; j++) {
         const n = neighbors[j];
 
-        // const walkabilityWeight = FlowField.getCellNeighborPositions(field, { position: n }).reduce((prev, curr) => {
-        //   if (!terrain.isWalkableAt(curr.values[0], curr.values[1])) {
-        //     return prev * 2;
-        //   } else {
-        //     return prev;
-        //   }
-        // }, 1);
+        const walkabilityWeight = FlowField.getCellNeighborPositions(field, { position: n }).reduce((prev, curr) => {
+          return (prev + 1 + terrain.valueAt(curr.values[0], curr.values[1])) / 2;
+          // if (!terrain.isWalkableAt(curr.values[0], curr.values[1])) {
+          //   return prev * 2;
+          // } else {
+          //   return prev;
+          // }
+        }, 1);
 
         const idx = FlowField.getIndexForPos(field, n.values[0], n.values[1]);
         if (terrain.isWalkableAt(n.values[0], n.values[1]) && dijkstraGrid[idx] === null) {
           // let thisCost = 1 + (terrain.valueAt(n.values[0], n.values[1]) > (terrain.walkableThreshold * 0.5) ? 100000 : 0);
           const neighborNode: DistNode = {
-            distance: current.distance + 1 + terrain.valueAt(n.values[0], n.values[1]),
+            distance: current.distance + 1, //  walkabilityWeight, // + terrain.valueAt(n.values[0], n.values[1]),
             index: idx,
             position: n,
           };
@@ -148,19 +150,18 @@ export class FlowField {
     const flows = FlowField.reset1dArrayValues<Vector>([], field.width, field.height, null);
 
     // let flows: Vector[] = [];
-    let position;
-    let neighbors;
+    let position:Vector;
+    let neighbors:Vector[];
     // console.log('costs', costs.length);
     // for (let i = 0; i < costs.length; i++) {
     for (let y = 0; y < field.height; y++) {
       for (let x = 0; x < field.width; x++) {
-        position = new Vector([x, y]);
+        position = Vector.get([x, y]);
         // console.log('here', i, position.toString());
         neighbors = FlowField.getCellNeighborPositions(field, { position });
 
         let lowestCost = Infinity;
         let lowestNeighbor = null;
-
         for (let j = 0; j < neighbors.length; j++) {
           // if (!terrain.isWalkableAt(neighbors[j].values[0], neighbors[j].values[1])) {
           //   continue;
@@ -168,18 +169,20 @@ export class FlowField {
 
           let neighborIdx = FlowField.getIndexForPos(field, neighbors[j].values[0], neighbors[j].values[1]);
           let neighborCost = costs[neighborIdx];
-          if (neighborCost < lowestCost) {
+          if (neighborCost <= lowestCost) {
             lowestCost = neighborCost;
             lowestNeighbor = neighbors[j];
           }
         }
 
-        let idx = FlowField.getIndexForPos(field, position.values[0], position.values[1]);
+        let idx = FlowField.getIndexForPos(field, x, y);
         if (lowestNeighbor) {
-          flows[idx] = new Vector(position).sub(lowestNeighbor).normalize().flip();
+          flows[idx] = Vector.get(lowestNeighbor).sub(position).normalize();
         } else {
           flows[idx] = null;
         }
+
+        Vector.free(position);
       }
     }
 
@@ -188,49 +191,6 @@ export class FlowField {
 
     return flows;
   }
-
-  static async old_calculateFlows(field: FlowFieldData, terrain: TerrainDisplay, costs: number[]): Promise<Vector[]> {
-    var x, y;
-
-    //Generate an empty grid, set all places as Vector2.zero, which will stand for no good direction
-    let flowCells = FlowField.reset1dArrayValues([], field.width, field.height, new Vector());
-
-    //for each grid square
-    for (y = 0; y < field.height; y++) {
-      for (x = 0; x < field.width; x++) {
-
-        if (!terrain.isWalkableAt(x, y)) {
-          continue;
-        }
-        var neighbors = FlowField.getCellNeighborPositions(field, { position: new Vector([x, y]) });
-
-        //Go through all neighbors and find the one with the lowest distance
-        let idx = FlowField.getIndexForPos(field, x, y);
-        var min = new Vector();
-        var minCost = Infinity;
-        for (var i = 0; i < neighbors.length; i++) {
-          var n = neighbors[i];
-          let neighborIdx = FlowField.getIndexForPos(field, n.values[0], n.values[1]);
-          // const dist = costs[neighborIdx] - costs[idx];
-          const dist = costs[neighborIdx]; //
-          // const neighborCost = costs[neighborIdx];
-
-          if (dist < minCost) {
-            min = n;
-            minCost = dist;
-          }
-        }
-
-        //If we found a valid neighbour, point in its direction
-        if (min) {
-          flowCells[idx] = new Vector([x, y]).sub(min).normalize().flip(); //.flip();
-        }
-      }
-    }
-
-    return flowCells;
-  }
-
 
   static async generate(terrain: TerrainDisplay, pointOfInterest: Vector): Promise<FlowFieldData> {
     // let idx;

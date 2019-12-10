@@ -1,6 +1,8 @@
 export default class Vector2D {
 
-  private static pool: Vector2D[] = [];
+  public static pool: Vector2D[] = [];
+  public static totalCount:number = 0;
+  public static freeCount:number = 0;
   private static _next:Vector2D;
   public static get(initial?: number[] | Vector2D):Vector2D {
     if (Vector2D.pool.length) {
@@ -20,18 +22,20 @@ export default class Vector2D {
     }
     return Vector2D._next;
   }
-  public static free(vec:Vector2D){
-    Vector2D.pool.push(vec);
+  public static free(...vecs:Vector2D[]){
+    Array.prototype.push.apply(Vector2D.pool, vecs);
   }
 
   public values: number[] = [0, 0];
   private constructor(initial?: number[] | Vector2D) {
+    Vector2D.totalCount += 1;
+    this.values = [];
     if (!initial) {
       this.values = [0, 0];
     } else if (Array.isArray(initial)) {
-      this.values = [...initial];
+      this.values = [initial[0], initial[1]];
     } else {
-      this.values = [...initial.values];
+      this.values = [initial.values[0], initial.values[1]];
     }
   }
 
@@ -112,6 +116,14 @@ export default class Vector2D {
       + ((other.values[1] - vec.values[1]) * (other.values[1] - vec.values[1]));
   }
 
+  public static dot(vec: Vector2D, other: Vector2D) {
+    return (vec.values[0] * other.values[0]) + (vec.values[0] * vec.values[1]);
+  }
+
+  public static cross(vec: Vector2D, other: Vector2D) {
+    return (vec.values[0] * other.values[1]) - (vec.values[1] * other.values[0]);
+  }
+
   public static normalize(vec: Vector2D) {
     const mag = vec.magnitude();
     return Vector2D.mult(vec, mag === 0 ? 0 : 1 / mag);
@@ -121,6 +133,9 @@ export default class Vector2D {
   }
   public static magnitude(vec: Vector2D): number {
     return Math.sqrt(vec.values[0] * vec.values[0] + vec.values[1] * vec.values[1]);
+  }
+  public static squaredMagnitude(vec: Vector2D):number {
+    return vec.values[0] * vec.values[0] + vec.values[1] * vec.values[1];
   }
   public static div(vec: Vector2D, val: number) {
     return Vector2D.mult(vec, 1 / val);
@@ -151,6 +166,12 @@ export default class Vector2D {
   public magnitude() {
     return Vector2D.magnitude(this);
   }
+
+  public squaredMagnitude() {
+    return Vector2D.squaredMagnitude(this);
+  }
+
+
   public normalize() {
     return Vector2D.normalize(this);
   }

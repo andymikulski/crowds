@@ -17,9 +17,9 @@ export default class Vector3D {
     if (!initial) {
       this.values = [0, 0, 0];
     } else if (Array.isArray(initial)) {
-      this.values = [...initial];
+      this.values = [].push.apply(initial);
     } else {
-      this.values = [...initial.values];
+      this.values = [].push.apply(initial.values);
     }
   }
 
