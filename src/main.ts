@@ -1,3 +1,5 @@
+import * as dat from 'dat.gui';
+
 import {
   SCREEN_WIDTH,
   SCREEN_HEIGHT,
@@ -19,12 +21,10 @@ terrain.draw();
 terrain.drawWalkable();
 terrain.drawGrid();
 
-
-
 const displayFlowFieldData = (data: FlowFieldData) => {
   console.log('field generated', data);
   displayCostVisual(data);
-  // displayFlowVisual(data);
+  displayFlowVisual(data);
 }
 
 const displayFlowVisual = (data: FlowFieldData) => {
@@ -37,14 +37,25 @@ const displayFlowVisual = (data: FlowFieldData) => {
   for (let y = 0; y < SCREEN_HEIGHT; y++) {
     for (let x = 0; x < SCREEN_WIDTH; x++) {
       dir = FlowField.getDirectionAt(data, x, y);
-      // ctx.beginPath();
-      // ctx.moveTo(x, y);
-      // ctx.lineTo(x + Math.cos(dir.values[0]), y + Math.sin(dir.values[1]));
-      // ctx.stroke();
-      // ctx.closePath();
+      if (!dir) {
+        continue;
+      }
+      ctx.fillStyle = 'black';
+      if (x % 10 === 0 && y % 10 === 0) {
+        const debugLength = 6;
+        const debugX = x + (dir.values[0]) * debugLength;
+        const debugY = y + (dir.values[1]) * debugLength;
+        const debugSize = 3;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(debugX, debugY);
+        ctx.stroke();
+        ctx.closePath();
+        ctx.fillRect(debugX - (debugSize / 2), debugY - (debugSize / 2), debugSize, debugSize);
+      }
 
       // ctx.fillStyle = mixColors('#ff0000', '#a1e064', cost / maxCost, 0.5);
-      ctx.fillStyle = `rgb(${dir.values[0] * 255}, ${dir.values[1] * 255}, 0)`;
+      ctx.fillStyle = `rgba(${dir.values[0] * 255}, ${dir.values[1] * 255}, 0, 0.2)`;
       ctx.fillRect(x, y, 1, 1);
     }
   }
@@ -66,21 +77,28 @@ const displayCostVisual = (data: FlowFieldData) => {
     for (let x = 0; x < SCREEN_WIDTH; x++) {
       cost = FlowField.getCostAt(data, x, y);
       if (cost <= 0) { continue; }
-      ctx.fillStyle = mixColors('#ff0000', '#a1e064', cost / maxCost, 0.5);
+      ctx.fillStyle = mixColors('#ff0000', '#00ff00', cost / maxCost, 0.5);
       // ctx.fillStyle = `rgba(255, 0, 0, ${(cost / maxCost)})`;
       ctx.fillRect(x, y, 1, 1);
     }
   }
-  document.body.appendChild(canvas);
+  document.body.insertBefore(canvas, document.body.firstChild);
 };
 
+
+
+const gui = new dat.GUI();
+gui.add(AgentManager.WEIGHTS, 'flow', 0, 10, 0.1);
+gui.add(AgentManager.WEIGHTS, 'separate', 0, 10, 0.1);
+gui.add(AgentManager.WEIGHTS, 'align', 0, 10, 0.1);
+gui.add(AgentManager.WEIGHTS, 'cohesion', 0, 10, 0.1);
 
 const run = async () => {
   const testFlow = await FlowField.generate(terrain, new Vector([SCREEN_WIDTH, SCREEN_HEIGHT_HALF]))
   displayFlowFieldData(testFlow);
 
   const agentMan = new AgentManager(terrain, testFlow);
-  for (let i = 0; i < 100; i++) {
+  for (let i = 0; i < 150; i++) {
     agentMan.spawnAgent(i);
   }
 

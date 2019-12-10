@@ -31,7 +31,7 @@ export class FlockBehavior {
     if (count > 0) {
       sum.div(count);
       sum.normalize();
-      sum.mult(currentAgent.maxSpeed);
+      sum.mult(currentAgent.currentSpeed);
       return Vector.sub(sum, currentAgent.velocity).limit(currentAgent.maxForce);
     }
     else {
@@ -69,11 +69,11 @@ export class FlockBehavior {
     if (steer.magnitude() > 0) {
       // First two lines of code below could be condensed with new setMag:Vector() method
       // Not using this method until Processing.js catches up
-      // steer.setMag(maxSpeed);
+      // steer.setMag(currentSpeed);
 
       // Implement Reynolds: Steering = Desired - Velocity
       steer.normalize();
-      steer.mult(currentAgent.maxSpeed);
+      steer.mult(currentAgent.currentSpeed);
       steer.sub(currentAgent.velocity);
       steer.limit(currentAgent.maxForce);
     }
@@ -87,9 +87,9 @@ export class FlockBehavior {
     let count = 0;
     for (let i = 0; i < agents.length; i++) {
       const other = agents[i];
-      if (other === currentAgent || other.color !== currentAgent.color) {
-        continue;
-      }
+      // if (other === currentAgent || other.color !== currentAgent.color) {
+      //   continue;
+      // }
 
       const d: number = Vector.squaredDist(currentAgent.position, other.position);
       if (d < neighborThreshold) {
@@ -100,7 +100,7 @@ export class FlockBehavior {
     if (count > 0) {
       sum.div(count);
       sum.normalize();
-      sum.mult(currentAgent.maxSpeed);
+      sum.mult(currentAgent.currentSpeed);
       return Vector.sub(sum, currentAgent.velocity).limit(currentAgent.maxForce);
     }
     else {
@@ -122,10 +122,8 @@ export class FlockBehavior {
 
       const d: number = Vector.squaredDist(currentAgent.position, other.position);
       if (d < neighborThreshold) {
-        if (other.color === currentAgent.color) {
-          sum.add(other.position); // Add position
-          count++;
-        }
+        sum.add(other.position); // Add position
+        count++;
       }
     }
     if (count > 0) {
@@ -143,11 +141,11 @@ export class FlockBehavior {
 
     // Scale to maximum speed
     desired.normalize();
-    desired.mult(agent.maxSpeed);
+    desired.mult(agent.currentSpeed);
 
     // Above two lines of code below could be condensed with new setMag:Vector() method
     // Not using this method until Processing.js catches up
-    // desired.setMag(maxSpeed);
+    // desired.setMag(currentSpeed);
 
     // Steering = Desired minus Velocity
     const steering = new Vector(desired);

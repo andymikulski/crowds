@@ -5,6 +5,7 @@ export type PositionTrait = {
 export type MotionTrait = {
 	acceleration: Vector;
 	velocity: Vector;
+	currentSpeed: number;
 	maxSpeed: number;
 	maxForce: number;
 };

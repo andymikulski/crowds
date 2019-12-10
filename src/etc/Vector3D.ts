@@ -1,6 +1,19 @@
 export default class Vector3D {
+  private static pool: Vector3D[] = [];
+  private static _next:Vector3D;
+  public static get(initial?: number[] | Vector3D):Vector3D {
+    if (Vector3D.pool.length) {
+      Vector3D._next = Vector3D.pool.pop();
+    } else {
+      Vector3D._next = new Vector3D();
+    }
+    Vector3D._next.values.length = 0;
+    Vector3D._next.values.push.apply(Vector3D._next.values);
+    return Vector3D._next;
+  }
+
   public values: number[] = [0, 0, 0];
-  constructor(initial?: number[] | Vector3D) {
+  private constructor(initial?: number[] | Vector3D) {
     if (!initial) {
       this.values = [0, 0, 0];
     } else if (Array.isArray(initial)) {

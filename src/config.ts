@@ -9,4 +9,4 @@ export const SCREEN_HEIGHT_HALF = SCREEN_HEIGHT / 2;
 
 export const CELL_SIZE = 4;
 
-export const TERRAIN_WALKABLE_THRESHOLD = 1; // 0.2;
+export const TERRAIN_WALKABLE_THRESHOLD = 0.2;

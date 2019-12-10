@@ -1,6 +1,31 @@
 export default class Vector2D {
+
+  private static pool: Vector2D[] = [];
+  private static _next:Vector2D;
+  public static get(initial?: number[] | Vector2D):Vector2D {
+    if (Vector2D.pool.length) {
+      Vector2D._next = Vector2D.pool.pop();
+    } else {
+      Vector2D._next = new Vector2D();
+    }
+
+    if (!initial) {
+      Vector2D._next.values[0] = Vector2D._next.values[1] = 0;
+    } else if (Array.isArray(initial)) {
+      Vector2D._next.values[0] = initial[0];
+      Vector2D._next.values[1] = initial[1];
+    } else {
+      Vector2D._next.values[0] = initial.values[0];
+      Vector2D._next.values[1] = initial.values[1];
+    }
+    return Vector2D._next;
+  }
+  public static free(vec:Vector2D){
+    Vector2D.pool.push(vec);
+  }
+
   public values: number[] = [0, 0];
-  constructor(initial?: number[] | Vector2D) {
+  private constructor(initial?: number[] | Vector2D) {
     if (!initial) {
       this.values = [0, 0];
     } else if (Array.isArray(initial)) {
@@ -10,6 +35,7 @@ export default class Vector2D {
     }
   }
 
+
   public static toString(vec: Vector2D) {
     return `Vector2D(${vec.values.join(', ')})`
   }
@@ -18,14 +44,32 @@ export default class Vector2D {
     return Vector2D.toString(this);
   }
 
+  public static flip(vec: Vector2D) {
+    const x = vec.values[0];
+    const y = vec.values[1];
+    vec.values[0] = -x;
+    vec.values[1] = -y;
+
+    return vec;
+  }
+
+  public static rotate(vec: Vector2D, degrees: number) {
+    vec.values[0]
+  }
+
   public static mult(vec: Vector2D, val: Vector2D | number) {
+    // console.log('in mult..', JSON.stringify(vec), JSON.stringify(val));
     if (typeof val === 'number') {
+      // console.log('..1..', JSON.stringify(vec));
       vec.values[0] *= val;
       vec.values[1] *= val;
+      // console.log('..2..', JSON.stringify(vec));
     }
     else {
+      // console.log('..3..', JSON.stringify(vec));
       vec.values[0] *= val.values[0];
       vec.values[1] *= val.values[1];
+      // console.log('..4..', JSON.stringify(vec));
     }
 
     return vec;
@@ -69,13 +113,11 @@ export default class Vector2D {
   }
 
   public static normalize(vec: Vector2D) {
-    Vector2D.mult(vec, 1 / Vector2D.magnitude(vec));
-    return vec;
+    const mag = vec.magnitude();
+    return Vector2D.mult(vec, mag === 0 ? 0 : 1 / mag);
   }
   public static limit(vec: Vector2D, maxVal: number) {
-    Vector2D.normalize(vec);
-    Vector2D.mult(vec, maxVal);
-    return vec;
+    return vec.normalize().mult(maxVal);
   }
   public static magnitude(vec: Vector2D): number {
     return Math.sqrt(vec.values[0] * vec.values[0] + vec.values[1] * vec.values[1]);
@@ -86,6 +128,11 @@ export default class Vector2D {
   public dist(other: Vector2D) {
     return Vector2D.dist(this, other);
   }
+
+  public flip() {
+    return Vector2D.flip(this);
+  }
+
   public div(val: number) {
     return Vector2D.mult(this, 1 / val);
   }

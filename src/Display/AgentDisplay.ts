@@ -50,12 +50,12 @@ export class AgentDisplay {
     // this.context.fillRect(0, 0, this.width, this.height);
 
     let i = agentCount - 1;
-    let currentWisp;
+    let currentAgent;
     while (i >= 0) {
-      currentWisp = agents[i];
+      currentAgent = agents[i];
       this.context.beginPath();
-      this.context.fillStyle = currentWisp.color;
-      AgentDisplay[render3D === 1 ? 'drawCircle3D' : 'drawCircle2D'](this.context, currentWisp);
+      this.context.fillStyle = currentAgent.color;
+      AgentDisplay[render3D === 1 ? 'drawCircle3D' : 'drawCircle2D'](this.context, currentAgent);
       this.context.fill();
       this.context.closePath();
       i -= 1;

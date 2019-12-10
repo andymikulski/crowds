@@ -4,7 +4,7 @@ export function hexToRgb(hex: string) {
   parseInt(result[2], 16),
   parseInt(result[3], 16)];
 }
-const lerp = (start: number, end: number, percentAmount: number) => {
+export const lerp = (start: number, end: number, percentAmount: number) => {
   const a = start * percentAmount;
   const b = end * (1 - percentAmount);
   return Math.round(a + b);
