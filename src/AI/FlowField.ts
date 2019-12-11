@@ -7,6 +7,7 @@ type ArrayIndex = number;
 export type FlowFieldData = {
   flowCells: Vector[];
   cellCosts: number[];
+  // distanceCells: number[];
 
   width: number;
   height: number;
@@ -62,26 +63,44 @@ export class FlowField {
     return Vector.get([index % field.width, Math.floor(index / field.width)]);
   }
 
-  /**
-   * returns
-   */
-  static getCellNeighborPositions(field: FlowFieldData, node: { position: Vector }): Vector[] {
-    const xMax = field.width;
-    const yMax = field.height;
-    const pos = node.position.values;
-    let found: Vector[] = [];
+  static immediateNeighbors(x: number, y: number) {
+    return [
+      [x - 1, y],
+      [x + 1, y],
+      [x, y - 1],
+      [x, y + 1],
+    ];
+  }
 
-    for (let y = -1; y <= 1; y++) {
-      for (let x = -1; x <= 1; x++) {
-        // something funky here
-        if ((x === 0 && y === 0) || x === y ) { continue; }
-        if (pos[0] + x >= 0 && pos[0] + x <= xMax && pos[1] + y >= 0 && pos[1] + y <= yMax) {
-          found.push(Vector.get([pos[0] + x, pos[1] + y]));
-        }
-      }
+  static octoNeighbors(x: number, y: number) {
+    return [
+      [x - 1, y],
+      [x - 1, y - 1],
+      [x, y - 1],
+      [x + 1, y - 1],
+      [x + 1, y],
+      [x + 1, y + 1],
+      [x, y + 1],
+      [x - 1, y + 1],
+    ];
+  }
+
+  private static checkPosBounds(field:FlowFieldData){
+    return (pos:number[]) => {
+      return (
+        pos[0] >= 0
+        && pos[0] <= field.width
+        && pos[1] >= 0
+        && pos[1] <= field.height
+      );
     }
+  }
 
-    return found;
+  static getCellNeighborPositions(field: FlowFieldData, node: { position: Vector }, useOcto:boolean = false): Vector[] {
+    const posCheck = FlowField.checkPosBounds(field);
+    return FlowField[useOcto ? 'octoNeighbors':'immediateNeighbors'](node.position.values[0], node.position.values[1])
+      .filter(posCheck)
+      .map(Vector.get);
   }
 
   static createFlowField(terrain: TerrainDisplay): FlowFieldData {
@@ -120,20 +139,20 @@ export class FlowField {
       for (let j = 0; j < neighbors.length; j++) {
         const n = neighbors[j];
 
-        const walkabilityWeight = FlowField.getCellNeighborPositions(field, { position: n }).reduce((prev, curr) => {
-          return (prev + 1 + terrain.valueAt(curr.values[0], curr.values[1])) / 2;
-          // if (!terrain.isWalkableAt(curr.values[0], curr.values[1])) {
-          //   return prev * 2;
-          // } else {
-          //   return prev;
-          // }
-        }, 1);
+        // const walkabilityWeight = FlowField.getCellNeighborPositions(field, { position: n }, true).reduce((prev, curr) => {
+        //   return (prev + 0 + terrain.valueAt(curr.values[0], curr.values[1])) / 2;
+        //   // if (!terrain.isWalkableAt(curr.values[0], curr.values[1])) {
+        //   //   return prev * 2;
+        //   // } else {
+        //   //   return prev;
+        //   // }
+        // }, 1);
 
         const idx = FlowField.getIndexForPos(field, n.values[0], n.values[1]);
         if (terrain.isWalkableAt(n.values[0], n.values[1]) && dijkstraGrid[idx] === null) {
           // let thisCost = 1 + (terrain.valueAt(n.values[0], n.values[1]) > (terrain.walkableThreshold * 0.5) ? 100000 : 0);
           const neighborNode: DistNode = {
-            distance: current.distance + 1, //  walkabilityWeight, // + terrain.valueAt(n.values[0], n.values[1]),
+            distance: current.distance + 1 + (terrain.valueAt(n.values[0], n.values[1]) * 1), //  + walkabilityWeight, // + terrain.valueAt(n.values[0], n.values[1]),
             index: idx,
             position: n,
           };
@@ -150,15 +169,15 @@ export class FlowField {
     const flows = FlowField.reset1dArrayValues<Vector>([], field.width, field.height, null);
 
     // let flows: Vector[] = [];
-    let position:Vector;
-    let neighbors:Vector[];
+    let position: Vector;
+    let neighbors: Vector[];
     // console.log('costs', costs.length);
     // for (let i = 0; i < costs.length; i++) {
     for (let y = 0; y < field.height; y++) {
       for (let x = 0; x < field.width; x++) {
         position = Vector.get([x, y]);
         // console.log('here', i, position.toString());
-        neighbors = FlowField.getCellNeighborPositions(field, { position });
+        neighbors = FlowField.getCellNeighborPositions(field, { position }, true);
 
         let lowestCost = Infinity;
         let lowestNeighbor = null;

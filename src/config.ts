@@ -9,6 +9,9 @@ export const SCREEN_HEIGHT_HALF = SCREEN_HEIGHT / 2;
 
 export const CELL_SIZE = 2;
 
-export const TERRAIN_WALKABLE_THRESHOLD = 0.2;
+export const TERRAIN_WALKABLE_THRESHOLD = 0.05;
 
-export const AGENT_SIZE = 2;
+export const AGENT_SIZE = 1.5;
+export const NUM_AGENTS = 500;
+
+export const TERRAIN_CHAOS = 0.015;

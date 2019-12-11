@@ -28,11 +28,11 @@ export class AgentManager {
     // separate: 1.3,
     // align: 0.8,
     // cohesion: 0.0,
-    racism: 0.5,
-    flow: 0.75,
-    separate: 1.25,
-    align: 1.65,
-    cohesion: 0.0,
+    racism: 0,
+    flow: 0.85,
+    separate: 1.5,
+    align: 0.25,
+    cohesion: 0.025,
   }
 
   public agents: Agent[] = [];
@@ -48,7 +48,7 @@ export class AgentManager {
   spawnAgent(index: number = 0, props: any = {}) {
     const angle = (index / 360) * (Math.PI / 180);
     const oddEven = Math.random() > 0.5 ? 1 : (Math.random() > 0.5 ? 2 : -1);
-    const speed =  (Math.max(0.55, Math.random() * 0.85));
+    const speed =  (Math.max(0.15, Math.random() * 0.35));
     const newWisp: Agent = {
       acceleration: Vector.get([0, 0, 0]),
       position: Vector.get([SCREEN_WIDTH * Math.random(), SCREEN_HEIGHT * Math.random(), WORLD_DEPTH_HALF]),
@@ -65,11 +65,11 @@ export class AgentManager {
     this.agentCount += 1;
   }
 
-  getNeighboringAgents(agent: Agent) {
+  getNearbyAgents(agent: Agent) {
     // let area = Math.max(1, agent.currentSpeed) * 5;
     // area *= area;
 
-    let area = 10 * 10;
+    let area = 15 * 15;
 
     return this.agents.filter(other => {
       return other !== agent
@@ -90,26 +90,29 @@ export class AgentManager {
   isInAgentsFOV(agent:Agent, other:Agent) {
     //Initialize starting vectors
     const currPos = Vector.get(agent.position);
-    const currDirection = Vector.get(agent.velocity).normalize();
     const otherPos = Vector.get(other.position);
 
     //Prepare normalized vectors
-    const currToOther = otherPos.sub(currPos).normalize();
-    // const currToOther = currPos.sub(otherPos).normalize();
+    const currDirection = Vector.get(agent.velocity).normalize();
+    const dirTowardsOther = otherPos.sub(currPos).normalize();
+    // const dirTowardsOther = currPos.sub(otherPos).normalize();
 
     //Check angle
-    const angle = Math.acos(Vector.dot(currDirection, currToOther));
+    const angle = Math.acos(Vector.dot(currDirection, dirTowardsOther));
     const angleInDegrees = angle * (180 / Math.PI);
     // throw angle * (180 / Math.PI);
     // debugger;
     // console.log(angleInDegrees)
+
+    // Vector.free(currPos, currDirection, otherPos, dirTowardsOther);
+
     return isNaN(angle) ? false : angleInDegrees > 45 && angleInDegrees < 135;
   }
 
   updateAgent(agent: Agent) {
     this.wallBehavior.updateAgent(agent);
 
-    let neighbors = this.getNeighboringAgents(agent);
+    let neighbors = this.getNearbyAgents(agent);
 
     let forces = [
       this.flowBehavior.updateAgent(agent).mult(AgentManager.WEIGHTS.flow),

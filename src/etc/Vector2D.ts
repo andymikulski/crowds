@@ -1,3 +1,5 @@
+declare var requestIdleCallback:any;
+
 export default class Vector2D {
 
   public static pool: Vector2D[] = [];
@@ -23,7 +25,9 @@ export default class Vector2D {
     return Vector2D._next;
   }
   public static free(...vecs:Vector2D[]){
-    Array.prototype.push.apply(Vector2D.pool, vecs);
+    requestIdleCallback(()=>{
+      Array.prototype.push.apply(Vector2D.pool, vecs);
+    });
   }
 
   public values: number[] = [0, 0];

@@ -20,7 +20,7 @@ export class FlockBehavior {
       }
 
       const d: number = Vector.squaredDist(currentAgent.position, other.position);
-      if (d < racismThreshold) {
+      // if (d < racismThreshold) {
         // racism
         const diff: Vector = Vector.get(currentAgent.position).sub(other.position).sub(Math.random() * 10);
         diff.normalize();
@@ -29,7 +29,7 @@ export class FlockBehavior {
         count++;
 
         Vector.free(diff);
-      }
+      // }
     }
 
     if (count > 0) {
@@ -54,7 +54,7 @@ export class FlockBehavior {
       if (other === currentAgent) { continue; }
 
       const d: number = Vector.squaredDist(currentAgent.position, other.position);
-      if ((d > 0) && (d < seperationBuffer)) {
+      if ((d > 0)){ // } && (d < seperationBuffer)) {
         // Calculate vector pointing away from neighbor
         const diff: Vector = Vector.get(currentAgent.position).sub(other.position);
         diff.normalize();
@@ -97,11 +97,11 @@ export class FlockBehavior {
       //   continue;
       // }
 
-      const d: number = Vector.squaredDist(currentAgent.position, other.position);
-      if (d < neighborThreshold) {
+      // const d: number = Vector.squaredDist(currentAgent.position, other.position);
+      // if (d < neighborThreshold) {
         sum.add(other.velocity);
         count++;
-      }
+      // }
     }
     if (count > 0) {
       sum.div(count);
@@ -126,11 +126,11 @@ export class FlockBehavior {
       //   continue;
       // }
 
-      const d: number = Vector.squaredDist(currentAgent.position, other.position);
-      if (d < neighborThreshold) {
+      // const d: number = Vector.squaredDist(currentAgent.position, other.position);
+      // if (d < neighborThreshold) {
         sum.add(other.position); // Add position
         count++;
-      }
+      // }
     }
     if (count > 0) {
       sum.div(count);

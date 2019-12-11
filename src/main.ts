@@ -7,6 +7,7 @@ import {
   CELL_SIZE,
   SCREEN_HEIGHT_HALF,
   SCREEN_WIDTH_HALF,
+  NUM_AGENTS,
 } from "./config";
 
 import { AgentDisplay } from './Display/AgentDisplay';
@@ -26,7 +27,7 @@ terrain.drawGrid();
 const displayFlowFieldData = (data: FlowFieldData) => {
   // console.log('field generated', data);
   displayCostVisual(data);
-  displayFlowVisual(data);
+  // displayFlowVisual(data);
 }
 
 const displayFlowVisual = (data: FlowFieldData) => {
@@ -150,7 +151,7 @@ const run = async () => {
       agentMan.spawnAgent(currentCount);
       currentCount += 1;
 
-      if(currentCount > 250){ return; }
+      if(currentCount > NUM_AGENTS){ return; }
       ok();
     }, 100);
   };
@@ -162,6 +163,10 @@ const run = async () => {
 
   const stepWorld = () => {
     agentMan.tick();
+    // agentMan.tick();
+    // agentMan.tick();
+    // agentMan.tick();
+    // agentMan.tick();
     disp.draw(agentMan.agents, agentMan.agentCount, 0);
     requestAnimationFrame(stepWorld);
   };
