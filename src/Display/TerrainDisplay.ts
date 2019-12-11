@@ -1,12 +1,13 @@
 import PerlinNoise from '../etc/perlin';
-import { SCREEN_HEIGHT, SCREEN_WIDTH, CELL_SIZE, TERRAIN_WALKABLE_THRESHOLD, TERRAIN_CHAOS } from '../config';
+import { SCREEN_HEIGHT, SCREEN_WIDTH, CELL_SIZE, TERRAIN_WALKABLE_THRESHOLD, TERRAIN_CHAOS, TERRAIN_SEED } from '../config';
 
 export class TerrainDisplay {
   canvas: HTMLCanvasElement;
   context: CanvasRenderingContext2D;
 
   // noise: PerlinNoise = new PerlinNoise(666666666664);
-  noise: PerlinNoise = new PerlinNoise(66666666666444445);
+  noise: PerlinNoise = new PerlinNoise(TERRAIN_SEED);
+  // noise: PerlinNoise = new PerlinNoise(66666666666444445);
   // noise: PerlinNoise = new PerlinNoise(2424555212545255);
   // noise: PerlinNoise = new PerlinNoise(66642424246664);
   // noise: PerlinNoise = new PerlinNoise(131312121215555);

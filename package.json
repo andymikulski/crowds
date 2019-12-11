@@ -45,6 +45,8 @@
   },
   "dependencies": {
     "@types/dat.gui": "^0.7.5",
-    "dat.gui": "^0.7.6"
+    "@types/lz-string": "^1.3.33",
+    "dat.gui": "^0.7.6",
+    "lz-string": "^1.4.4"
   }
 }

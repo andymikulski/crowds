@@ -7,6 +7,7 @@ import {
   SCREEN_HEIGHT_HALF,
   WORLD_DEPTH_HALF,
   AGENT_SIZE,
+  AGENT_WEIGHTS,
 } from "../config";
 import { PositionTrait, MotionTrait, DisplayTrait } from '../traits';
 import { FlockBehavior } from './Flock';
@@ -23,24 +24,14 @@ export type Agent = PositionTrait & MotionTrait & DisplayTrait;
 
 export class AgentManager {
 
-  public static WEIGHTS = {
-    // flow: 0.3,
-    // separate: 1.3,
-    // align: 0.8,
-    // cohesion: 0.0,
-    racism: 0,
-    flow: 0.85,
-    separate: 1.5,
-    align: 0.25,
-    cohesion: 0.025,
-  }
+  public static WEIGHTS = AGENT_WEIGHTS;
 
   public agents: Agent[] = [];
   public agentCount: number = 0;
 
   private wallBehavior: WallBehavior;
   private flowBehavior: FlowBehavior;
-  constructor(terrain: TerrainDisplay, private flowField: FlowFieldData) {
+  constructor(private terrain: TerrainDisplay, private flowField: FlowFieldData) {
     this.wallBehavior = new WallBehavior(terrain);
     this.flowBehavior = new FlowBehavior(flowField);
   }
@@ -48,16 +39,21 @@ export class AgentManager {
   spawnAgent(index: number = 0, props: any = {}) {
     const angle = (index / 360) * (Math.PI / 180);
     const oddEven = Math.random() > 0.5 ? 1 : (Math.random() > 0.5 ? 2 : -1);
-    const speed =  (Math.max(0.15, Math.random() * 0.35));
+    const speed =  (Math.max(0.15, Math.random() * 0.225));
+    let position;
+    do {
+      position = Vector.get([SCREEN_WIDTH * Math.random(), SCREEN_HEIGHT * Math.random(), WORLD_DEPTH_HALF]);
+    } while (!this.terrain.isWalkableAt(position.values[0], position.values[1]))
+
     const newWisp: Agent = {
       acceleration: Vector.get([0, 0, 0]),
-      position: Vector.get([SCREEN_WIDTH * Math.random(), SCREEN_HEIGHT * Math.random(), WORLD_DEPTH_HALF]),
+      position,
       velocity: Vector.get([0, 0, 0]), // Vector.get([Math.cos(angle), Math.sin(angle), 0]),
       color: '#222', //  oddEven === 1 ? '#f00' : (oddEven === 2 ? '#00f' : '#222'),
       size: AGENT_SIZE,
       maxSpeed: speed,
       currentSpeed: speed,
-      maxForce: 0.00825, // 125,
+      maxForce: 0.05, // 125,
       ...props,
     };
 
@@ -119,6 +115,7 @@ export class AgentManager {
       FlockBehavior.separate(agent, neighbors).mult(AgentManager.WEIGHTS.separate),
       FlockBehavior.align(agent, neighbors).mult(AgentManager.WEIGHTS.align),
       FlockBehavior.cohesion(agent, neighbors).mult(AgentManager.WEIGHTS.cohesion),
+      // WallBehavior.avoidWalls(agent).mult(AgentManager.WEIGHTS.avoidWalls),
       // FlockBehavior.racism(agent, neighbors).mult(AgentManager.WEIGHTS.racism),
     ];
 

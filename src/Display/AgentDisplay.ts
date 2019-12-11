@@ -46,7 +46,7 @@ export class AgentDisplay {
     agents = agents.sort(depthSort);
     this.context.clearRect(0, 0, this.width, this.height);
 
-    // this.context.fillStyle = 'rgba(255,255,255,0.1)';
+    // this.context.fillStyle = 'rgba(255,255,255,0.025)';
     // this.context.fillRect(0, 0, this.width, this.height);
 
     let i = agentCount - 1;
