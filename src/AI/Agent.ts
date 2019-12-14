@@ -1,4 +1,5 @@
-import Vector from '../etc/Vector2D';
+import VecMath, { Vector2D } from '../etc/Vector2D';
+type Vector = Vector2D;
 
 import {
   SCREEN_WIDTH,
@@ -8,6 +9,9 @@ import {
   WORLD_DEPTH_HALF,
   AGENT_SIZE,
   AGENT_WEIGHTS,
+  MIN_SPEED,
+  MAX_SPEED,
+  MAX_FORCE,
 } from "../config";
 import { PositionTrait, MotionTrait, DisplayTrait } from '../traits';
 import { FlockBehavior } from './Flock';
@@ -39,21 +43,21 @@ export class AgentManager {
   spawnAgent(index: number = 0, props: any = {}) {
     const angle = (index / 360) * (Math.PI / 180);
     const oddEven = Math.random() > 0.5 ? 1 : (Math.random() > 0.5 ? 2 : -1);
-    const speed =  (Math.max(0.15, Math.random() * 0.225));
+    const speed =  (Math.max(MIN_SPEED, Math.random() * MAX_SPEED));
     let position;
     do {
-      position = Vector.get([SCREEN_WIDTH * Math.random(), SCREEN_HEIGHT * Math.random(), WORLD_DEPTH_HALF]);
-    } while (!this.terrain.isWalkableAt(position.values[0], position.values[1]))
+      position = [SCREEN_WIDTH * Math.random(), SCREEN_HEIGHT * Math.random(), WORLD_DEPTH_HALF];
+    } while (!this.terrain.isWalkableAt(position[0], position[1]))
 
     const newWisp: Agent = {
-      acceleration: Vector.get([0, 0, 0]),
+      acceleration: [0, 0, 0],
       position,
-      velocity: Vector.get([0, 0, 0]), // Vector.get([Math.cos(angle), Math.sin(angle), 0]),
+      velocity: [0, 0, 0], // VecMath.get([Math.cos(angle), Math.sin(angle), 0]),
       color: '#222', //  oddEven === 1 ? '#f00' : (oddEven === 2 ? '#00f' : '#222'),
       size: AGENT_SIZE,
       maxSpeed: speed,
       currentSpeed: speed,
-      maxForce: 0.05, // 125,
+      maxForce: MAX_FORCE, // 125,
       ...props,
     };
 
@@ -69,7 +73,7 @@ export class AgentManager {
 
     return this.agents.filter(other => {
       return other !== agent
-        && Vector.squaredDist(agent.position, other.position) < area
+        && VecMath.squaredDist(agent.position, other.position) < area
         && this.isInAgentsFOV(agent, other)
         // && this.isGenerallyHeadingSameDirection(agent, other);
     });
@@ -78,29 +82,29 @@ export class AgentManager {
   isGenerallyHeadingSameDirection(agent:Agent, other:Agent) {
     // they have same oriented direction if their cross product is zero
     // and dot product is greater than zero.
-    // let cross = Vector.cross(agent.velocity, other.velocity) ;
-    return Vector.dot(agent.velocity, other.velocity) > 0
+    // let cross = VecMath.cross(agent.velocity, other.velocity) ;
+    return VecMath.dot(agent.velocity, other.velocity) > 0
       // && cross > -0.05 && cross < 0.05;
   }
 
   isInAgentsFOV(agent:Agent, other:Agent) {
     //Initialize starting vectors
-    const currPos = Vector.get(agent.position);
-    const otherPos = Vector.get(other.position);
+    const currPos:Vector = [agent.position[0], agent.position[1]];
+    const otherPos:Vector = [other.position[0], other.position[1]];
 
     //Prepare normalized vectors
-    const currDirection = Vector.get(agent.velocity).normalize();
-    const dirTowardsOther = otherPos.sub(currPos).normalize();
+    const currDirection:Vector = VecMath.normalize(agent.velocity);
+    const dirTowardsOther:Vector = VecMath.normalize(VecMath.sub(otherPos, currPos));
     // const dirTowardsOther = currPos.sub(otherPos).normalize();
 
     //Check angle
-    const angle = Math.acos(Vector.dot(currDirection, dirTowardsOther));
+    const angle = Math.acos(VecMath.dot(currDirection, dirTowardsOther));
     const angleInDegrees = angle * (180 / Math.PI);
     // throw angle * (180 / Math.PI);
     // debugger;
     // console.log(angleInDegrees)
 
-    // Vector.free(currPos, currDirection, otherPos, dirTowardsOther);
+    // VecMath.free(currPos, currDirection, otherPos, dirTowardsOther);
 
     return isNaN(angle) ? false : angleInDegrees > 45 && angleInDegrees < 135;
   }
@@ -111,18 +115,16 @@ export class AgentManager {
     let neighbors = this.getNearbyAgents(agent);
 
     let forces = [
-      this.flowBehavior.updateAgent(agent).mult(AgentManager.WEIGHTS.flow),
-      FlockBehavior.separate(agent, neighbors).mult(AgentManager.WEIGHTS.separate),
-      FlockBehavior.align(agent, neighbors).mult(AgentManager.WEIGHTS.align),
-      FlockBehavior.cohesion(agent, neighbors).mult(AgentManager.WEIGHTS.cohesion),
+      VecMath.mult(this.flowBehavior.updateAgent(agent), AgentManager.WEIGHTS.flow),
+      VecMath.mult(FlockBehavior.separate(agent, neighbors), AgentManager.WEIGHTS.separate),
+      VecMath.mult(FlockBehavior.align(agent, neighbors), AgentManager.WEIGHTS.align),
+      VecMath.mult(FlockBehavior.cohesion(agent, neighbors), AgentManager.WEIGHTS.cohesion),
       // WallBehavior.avoidWalls(agent).mult(AgentManager.WEIGHTS.avoidWalls),
       // FlockBehavior.racism(agent, neighbors).mult(AgentManager.WEIGHTS.racism),
     ];
 
     // Flocking
-    Vector.prototype.addMultiple.apply(agent.acceleration, forces);
-
-    Vector.free.apply(Vector, forces);
+    agent.acceleration = VecMath.addMultiple(agent.acceleration, ...forces);
 
     // Slowing
     // SlowingBehavior.updateAgent(agent, neighbors);
@@ -130,7 +132,7 @@ export class AgentManager {
     // Motion
     PhysicsBehavior.updateAgent(agent);
 
-    // console.log('asdf', agent, agent.position.values, agent.acceleration.values, agent.velocity.values);
+    // console.log('asdf', agent, agent.position, agent.acceleration, agent.velocity);
     // throw new Error();
     // Lock agents inside the screen
     BoundaryBehavior.updateAgent(agent);

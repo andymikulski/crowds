@@ -1,7 +1,7 @@
 import LZString from 'lz-string';
-import Vector from "../etc/Vector2D";
+import VecMath, {Vector} from "../etc/Vector2D";
 import { TerrainDisplay } from "../Display/TerrainDisplay";
-import { CELL_SIZE, TERRAIN_WALKABLE_THRESHOLD, TERRAIN_SEED, DISTANCE_FIELD_GRANULARITY, DISTANCE_FIELD_THRESHOLD } from "../config";
+import { CELL_SIZE, TERRAIN_WALKABLE_THRESHOLD, TERRAIN_SEED, DISTANCE_FIELD_GRANULARITY, DISTANCE_FIELD_THRESHOLD, DISTANCE_WEIGHT } from "../config";
 import { lerp } from '../etc/colorUtils';
 
 type ArrayIndex = number;
@@ -30,7 +30,7 @@ export type FlowList = {
 
 export class FlowField {
   static getDirectionAt(field: FlowFieldData, x: number, y: number) {
-    return field.flowCells[(y * field.width) + x];
+    return field.flowCells[(y * field.width) + x] || [0,0];
   }
   static getCostAt(field: FlowFieldData, x: number, y: number) {
     return field.cellCosts[(y * field.width) + x];
@@ -64,11 +64,11 @@ export class FlowField {
     return (y * field.width) + x;
   }
 
-  static getPosForIndex(field: FlowFieldData, index: number) {
-    return Vector.get([index % field.width, Math.floor(index / field.width)]);
+  static getPosForIndex(field: FlowFieldData, index: number):Vector {
+    return [index % field.width, Math.floor(index / field.width)];
   }
 
-  static immediateNeighbors(offset: number, x: number, y: number) {
+  static immediateNeighbors(offset: number, x: number, y: number):Vector[] {
     return [
       [x - offset, y],
       [x + offset, y],
@@ -77,7 +77,7 @@ export class FlowField {
     ];
   }
 
-  static octoNeighbors(offset: number, x: number, y: number) {
+  static octoNeighbors(offset: number, x: number, y: number):Vector[] {
     return [
       [x - offset, y],
       [x - offset, y - offset],
@@ -103,9 +103,8 @@ export class FlowField {
 
   static getCellNeighborPositions(field: FlowFieldData, position: Vector, useOcto: boolean = false, offset: number = 1): Vector[] {
     const posCheck = FlowField.checkPosBounds(field);
-    return FlowField[useOcto ? 'octoNeighbors' : 'immediateNeighbors'](offset, position.values[0], position.values[1])
+    return FlowField[useOcto ? 'octoNeighbors' : 'immediateNeighbors'](offset, position[0], position[1])
       .filter(posCheck)
-      .map(Vector.get);
   }
 
   static createFlowField(terrain: TerrainDisplay): FlowFieldData {
@@ -116,7 +115,7 @@ export class FlowField {
       flowCells: [],
       height: terrain.height,
       width: terrain.width,
-      origin: Vector.get([0, 0]),
+      origin: [0, 0],
     };
   }
 
@@ -126,8 +125,8 @@ export class FlowField {
 
     const startPoint: DistNode = {
       distance: 0,
-      index: FlowField.getIndexForPos(field, target.values[0], target.values[1]),
-      position: Vector.get(target),
+      index: FlowField.getIndexForPos(field, target[0], target[1]),
+      position: target,
     };
 
     //flood fill out from the end point
@@ -145,20 +144,20 @@ export class FlowField {
       for (let j = 0; j < neighbors.length; j++) {
         const n = neighbors[j];
 
-        const idx = FlowField.getIndexForPos(field, n.values[0], n.values[1]);
-        if (dijkstraGrid[idx] === null && terrain.isWalkableAt(n.values[0], n.values[1])) {
+        const idx = FlowField.getIndexForPos(field, n[0], n[1]);
+        if (dijkstraGrid[idx] === null){ // } && terrain.isWalkableAt(n[0], n[1])) {
           // const walkabilityWeight = FlowField.getCellNeighborPositions(field, n, true, 25)
           //   .reduce((prev, curr) => {
-          //     if (!terrain.isWalkableAt(curr.values[0], curr.values[1])) {
-          //       return prev + (10 * (terrain.valueAt(curr.values[0], curr.values[1]) - TERRAIN_WALKABLE_THRESHOLD));
+          //     if (!terrain.isWalkableAt(curr[0], curr[1])) {
+          //       return prev + (10 * (terrain.valueAt(curr[0], curr[1]) - TERRAIN_WALKABLE_THRESHOLD));
           //     } else {
           //       return prev;
           //     }
           //   }, 0);
 
-          // let thisCost = 1 + (terrain.isWalkableAt(n.values[0], n.values[1]) ? 0 : 1000);
+          // let thisCost = 1 + (terrain.isWalkableAt(n[0], n[1]) ? 0 : 1000);
           const neighborNode: DistNode = {
-            distance: current.distance + 1, //   + (250*(1-Math.min(1, distances[idx] / DISTANCE_FIELD_THRESHOLD))),  //+ Math.max(0, (1-(distances[idx] / (DISTANCE_FIELD_THRESHOLD)))*1000), // + walkabilityWeight,
+            distance: current.distance + 1 + (terrain.valueAt(n[0], n[1]) * 10) , //   + (250*(1-Math.min(1, distances[idx] / DISTANCE_FIELD_THRESHOLD))),  //+ Math.max(0, (1-(distances[idx] / (DISTANCE_FIELD_THRESHOLD)))*1000), // + walkabilityWeight,
             index: idx,
             position: n,
           };
@@ -181,18 +180,18 @@ export class FlowField {
     // for (let i = 0; i < costs.length; i++) {
     for (let y = 0; y < field.height; y++) {
       for (let x = 0; x < field.width; x++) {
-        position = Vector.get([x, y]);
+        position = [x, y];
         // console.log('here', i, position.toString());
         neighbors = FlowField.getCellNeighborPositions(field, position, true);
 
         let lowestCost = Infinity;
         let lowestNeighbor = null;
         for (let j = 0; j < neighbors.length; j++) {
-          // if (!terrain.isWalkableAt(neighbors[j].values[0], neighbors[j].values[1])) {
+          // if (!terrain.isWalkableAt(neighbors[j][0], neighbors[j][1])) {
           //   continue;
           // }
 
-          let neighborIdx = FlowField.getIndexForPos(field, neighbors[j].values[0], neighbors[j].values[1]);
+          let neighborIdx = FlowField.getIndexForPos(field, neighbors[j][0], neighbors[j][1]);
           let neighborCost = costs[neighborIdx];
           if (neighborCost < lowestCost) {
             lowestCost = neighborCost;
@@ -202,12 +201,10 @@ export class FlowField {
 
         let idx = FlowField.getIndexForPos(field, x, y);
         if (lowestNeighbor) {
-          flows[idx] = Vector.get(lowestNeighbor).sub(position).normalize();
+          flows[idx] = VecMath.normalize(VecMath.sub(lowestNeighbor, position));
         } else {
           flows[idx] = null;
         }
-
-        Vector.free(position);
       }
     }
 
@@ -241,8 +238,17 @@ export class FlowField {
       const cachedData = localStorage.getItem(`${TERRAIN_SEED},${terrain.width},${terrain.height}`);
 
       if (cachedData) {
-        res(JSON.parse(LZString.decompress(cachedData)));
-        return;
+        try {
+          const loadedDistances = JSON.parse(LZString.decompress(cachedData) || 'null');
+          if (loadedDistances){
+            res(loadedDistances);
+            return;
+          } else {
+            console.log('No distance loaded, but key present. Contents: ' + cachedData.slice(0, 25) + (cachedData.length > 25 ? '...' : ''));
+          }
+        } catch (err) {
+          console.log('Error loading saved distances!', err);
+        }
       }
 
       const distances = FlowField.reset1dArrayValues<number>([], field.width, field.height, 0);
@@ -255,11 +261,11 @@ export class FlowField {
       for (let y = 0; y < field.height; y++) {
         for (let x = 0; x < field.width; x++) {
 
-          let openList = [[x, y]];
+          let openList:Vector[] = [[x, y]];
           let nX: number;
           let nY: number;
           let dist = 0;
-          let next;
+          let next: Vector;
           let foundTerrain = false;
           let tracked: any = {
             [`${openList[0].toString()}`]: true,
@@ -275,8 +281,8 @@ export class FlowField {
               openList.length = 0;
               foundTerrain = true;
             } else {
-              const neighbs = FlowField.getCellNeighborPositions(field, Vector.get(next), true, DISTANCE_FIELD_GRANULARITY)
-                .map(val => [val.values[0], val.values[1]])
+              const neighbs = FlowField.getCellNeighborPositions(field, next, true, DISTANCE_FIELD_GRANULARITY)
+                .map(val => [val[0], val[1]])
                 .filter(val => !tracked.hasOwnProperty(val.toString()));
 
               for(const idx in neighbs){
@@ -317,7 +323,7 @@ export class FlowField {
         for (let y = -smoothRange; y <= smoothRange; y++) {
           for (let x = -smoothRange; x <= smoothRange; x++) {
             if (x === 0 && y === 0) { continue; }
-            neighb = [pos.values[0] + x, pos.values[1] + y]
+            neighb = [pos[0] + x, pos[1] + y]
 
             if (neighb[0] <= 0 || neighb[0] >= field.width || neighb[1] <= 0 || neighb[1] >= field.height) {
               // val = (val + 0) / 2;
@@ -334,7 +340,7 @@ export class FlowField {
 
         // FlowField.getCellNeighborPositions(field, Vector.get(pos), true, 1)
         // .forEach(neighb => {
-        //   neighIdx = FlowField.getIndexForPos(field, neighb.values[0], neighb.values[1]);
+        //   neighIdx = FlowField.getIndexForPos(field, neighb[0], neighb[1]);
         //   neighCost = distances[neighIdx] || 65535;
         //   val = lerp(val, neighCost, 0.5);
         // })
@@ -376,7 +382,7 @@ export class FlowField {
 
 
     costs = costs.map((val, idx) => {
-      return val + Math.max(0, (1-(distances[idx] / (DISTANCE_FIELD_THRESHOLD)))*1000);  //((1 - (distances[idx] / maxDist)) * 500);
+      return val + Math.max(0, (1-(distances[idx] / (DISTANCE_FIELD_THRESHOLD)))*DISTANCE_WEIGHT);  //((1 - (distances[idx] / maxDist)) * 500);
     });
 
     console.time('flows');

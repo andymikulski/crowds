@@ -1,4 +1,4 @@
-import Vector from './etc/Vector2D';
+import VecMath, { Vector } from './etc/Vector2D';
 export type PositionTrait = {
 	position: Vector;
 };

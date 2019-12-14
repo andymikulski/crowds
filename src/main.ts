@@ -14,7 +14,7 @@ import { AgentDisplay } from './Display/AgentDisplay';
 import { AgentManager } from './AI/Agent';
 import { TerrainDisplay } from "./Display/TerrainDisplay";
 import { FlowField, FlowFieldData } from "./AI/FlowField";
-import Vector from "./etc/Vector2D";
+import VecMath, { Vector } from "./etc/Vector2D";
 import { mixColors } from "./etc/colorUtils";
 import Vector2D from './etc/Vector2D';
 
@@ -49,8 +49,8 @@ const displayFlowVisual = (data: FlowFieldData) => {
       ctx.fillStyle = 'black';
       if (x % 10 === 0 && y % 10 === 0) {
         const debugLength = 3;
-        const debugX = x + (dir.values[0]) * debugLength;
-        const debugY = y + (dir.values[1]) * debugLength;
+        const debugX = x + (dir[0]) * debugLength;
+        const debugY = y + (dir[1]) * debugLength;
         const debugSize = 1.5;
         ctx.beginPath();
         ctx.moveTo(x, y);
@@ -61,7 +61,7 @@ const displayFlowVisual = (data: FlowFieldData) => {
       }
 
       // ctx.fillStyle = mixColors('#ff0000', '#a1e064', cost / maxCost, 0.5);
-      ctx.fillStyle = `rgba(${dir.values[0] * 255}, ${dir.values[1] * 255}, 0, 0.2)`;
+      ctx.fillStyle = `rgba(${dir[0] * 255}, ${dir[1] * 255}, 0, 0.2)`;
       ctx.fillRect(x, y, 1, 1);
     }
   }
@@ -128,26 +128,14 @@ gui.add(AgentManager.WEIGHTS, 'align', 0, 5, 0.05);
 gui.add(AgentManager.WEIGHTS, 'cohesion', 0, 5, 0.05);
 
 // const ok = ()=>{
-//   console.log('pool..', Vector2D.pool.length, Vector2D.totalCount, Vector2D.freeCount);
+//   console.log('pool..', VecMath.pool.length, VecMath.totalCount, VecMath.freeCount);
 //   requestIdleCallback(ok);
 // };
 // requestIdleCallback(ok);
 
-
-const seedPools = (num: number) => {
-  for (let i = 0; i < num; i++) {
-    Vector2D.pool.push(Vector2D.get());
-  }
-}
-
-
 const run = async () => {
-  console.time('seed');
-  seedPools(1);
-  console.timeEnd('seed');
-
   console.time('flowField');
-  const testFlow = await FlowField.generate(terrain, Vector.get([SCREEN_WIDTH, SCREEN_HEIGHT_HALF]))
+  const testFlow = await FlowField.generate(terrain, [SCREEN_WIDTH, SCREEN_HEIGHT_HALF])
   console.timeEnd('flowField');
   displayFlowFieldData(testFlow);
 
