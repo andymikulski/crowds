@@ -23,6 +23,17 @@ export default class VecMath {
     return [vec[0] * val[0], vec[1] * val[1]];
   }
 
+  public static multMutate(vec: Vector2D, val: Vector2D | number):Vector2D {
+    if (typeof val === 'number') {
+      vec[0] *= val;
+      vec[1] *= val;
+    }else {
+      vec[0] *= val[0];
+      vec[1] *= val[1];
+    }
+    return vec;
+  }
+
   public static div(vec: Vector2D, val: Vector2D | number):Vector2D {
     if (typeof val === 'number') {
       return [vec[0] / val, vec[1] / val];
@@ -47,6 +58,18 @@ export default class VecMath {
     }
     return [vec[0] + val[0], vec[1] + val[1]];
   }
+
+  public static addMutate(vec: Vector2D, val: Vector2D | number):Vector2D {
+    if (typeof val === 'number') {
+      vec[0] += val;
+      vec[1] += val;
+    }else {
+      vec[0] += val[0];
+      vec[1] += val[1];
+    }
+    return vec;
+  }
+
   public static sub(vec: Vector2D, val: Vector2D | number):Vector2D {
     if (typeof val === 'number') {
       return [vec[0] - val, vec[1] - val];
@@ -79,6 +102,7 @@ export default class VecMath {
   public static limit(vec: Vector2D, maxVal: number):Vector2D {
     return VecMath.mult(VecMath.normalize(vec), maxVal);
   }
+
   public static magnitude(vec: Vector2D): number {
     return Math.sqrt(vec[0] * vec[0] + vec[1] * vec[1]);
   }

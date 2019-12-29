@@ -8,6 +8,7 @@ import {
   SCREEN_HEIGHT_HALF,
   SCREEN_WIDTH_HALF,
   NUM_AGENTS,
+  DISTANCE_FIELD_THRESHOLD,
 } from "./config";
 
 import { AgentDisplay } from './Display/AgentDisplay';
@@ -17,6 +18,7 @@ import { FlowField, FlowFieldData } from "./AI/FlowField";
 import VecMath, { Vector } from "./etc/Vector2D";
 import { mixColors } from "./etc/colorUtils";
 import Vector2D from './etc/Vector2D';
+import { SpatialHash } from './SpatialHash';
 
 const disp = new AgentDisplay(SCREEN_WIDTH, SCREEN_HEIGHT);
 const terrain = new TerrainDisplay(SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -103,20 +105,54 @@ const displayDistanceVisual = (field: FlowFieldData) => {
   let maxDist = field.distanceCells.reduce((prev, curr) => {
     return prev > curr ? prev : curr;
   }, -Infinity);
-  console.log('max dist =', maxDist);
 
   for (let y = 0; y < SCREEN_HEIGHT; y++) {
     for (let x = 0; x < SCREEN_WIDTH; x++) {
       dist = field.distanceCells[FlowField.getIndexForPos(field, x, y)]
       // dist = FlowField.getCostAt(data, x, y);
       // if (dist < 0) { continue; }
-      ctx.fillStyle = mixColors('#000000', '#ffffff', 1 - (dist / maxDist), 0.5);
+      ctx.fillStyle = mixColors('#000000', '#ffffff', 1 - (dist / DISTANCE_FIELD_THRESHOLD), 0.5);
       // ctx.fillStyle = `rgba(255, 0, 0, ${(cost / maxCost)})`;
       ctx.fillRect(x, y, 1, 1);
     }
   }
   document.body.insertBefore(canvas, document.body.firstChild);
 };
+
+
+let hashCtx: CanvasRenderingContext2D;
+const makeSpatialHashDisplay = () => {
+  const canvas = document.createElement('canvas');
+  canvas.setAttribute('id', 'spatialHash')
+  canvas.width = SCREEN_WIDTH;
+  canvas.height = SCREEN_HEIGHT;
+  hashCtx = canvas.getContext('2d');
+  document.body.insertBefore(canvas, document.body.firstChild);
+};
+const updateHashDisplay = (hash: SpatialHash) => {
+  hashCtx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+  // const slices = SCREEN_WIDTH / hash.cellSize;
+
+  let count;
+  let val;
+      hashCtx.strokeStyle = `rgba(0, 0, 0, 0.15)`;
+  for (let y = hash.cellSize / 2; y < SCREEN_HEIGHT; y += hash.cellSize) {
+    for (let x = hash.cellSize / 2; x < SCREEN_WIDTH; x += hash.cellSize) {
+      count = hash.getNeighborsForPosition([x, y]).length;
+      val = count / (NUM_AGENTS / (hash.cellSize / 2)) ; // (hash.cellSize / 4);
+      // if(val < 0.05){ continue; }
+      hashCtx.beginPath();
+      // hashCtx.strokeStyle = `rgba(0, 0, 0, ${val})`;
+      hashCtx.fillStyle = `rgba(${255 * val}, 0, 0, 0.25)`; //  ${count / NUM_AGENTS})`;
+      hashCtx.rect(x - (hash.cellSize / 2), y - (hash.cellSize / 2), hash.cellSize, hash.cellSize);
+
+      hashCtx.fill();
+      hashCtx.stroke();
+      hashCtx.closePath();
+      // hashCtx.strokeRect(x - (hash.cellSize / 2), y- (hash.cellSize / 2), hash.cellSize, hash.cellSize);
+    }
+  }
+}
 
 
 
@@ -135,12 +171,17 @@ gui.add(AgentManager.WEIGHTS, 'cohesion', 0, 5, 0.05);
 
 const run = async () => {
   console.time('flowField');
+  // const testFlow = await FlowField.generate(terrain, [SCREEN_WIDTH, SCREEN_HEIGHT_HALF])
   const testFlow = await FlowField.generate(terrain, [SCREEN_WIDTH, SCREEN_HEIGHT_HALF])
   console.timeEnd('flowField');
   displayFlowFieldData(testFlow);
 
   // console.time('spawnAgents');
   const agentMan = new AgentManager(terrain, testFlow);
+
+
+
+
   let currentCount = 0;
   for (let i = 0; i < NUM_AGENTS; i++) {
     agentMan.spawnAgent(currentCount);
@@ -148,12 +189,29 @@ const run = async () => {
   }
 
 
+  // return;
+
+
   // }
   // console.timeEnd('spawnAgents');
+  // makeSpatialHashDisplay();
+
+  let _flagged = false;
+  const flagUpdate = () => {
+    if (_flagged) { return; }
+    _flagged = true;
+
+    requestIdleCallback(() => {
+      updateHashDisplay(agentMan.locationHash);
+      _flagged = false;
+    });
+  }
 
   const stepWorld = () => {
     agentMan.tick();
     disp.draw(agentMan.agents, agentMan.agentCount, 0);
+    // updateHashDisplay(agentMan.locationHash);
+    // flagUpdate();
     requestAnimationFrame(stepWorld);
   };
   stepWorld();

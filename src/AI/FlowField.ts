@@ -123,9 +123,12 @@ export class FlowField {
     //Generate an empty grid, set all places as weight null, which will stand for unvisited
     const dijkstraGrid = FlowField.reset1dArrayValues<number>([], field.width, field.height, null);
 
+
+    const startIdx = FlowField.getIndexForPos(field, target[0], target[1]);
+
     const startPoint: DistNode = {
-      distance: 0,
-      index: FlowField.getIndexForPos(field, target[0], target[1]),
+      distance: distances[startIdx] ? Math.max(0, (1 - (distances[startIdx] / DISTANCE_FIELD_THRESHOLD))) * 5000 : 0,
+      index: startIdx,
       position: target,
     };
 
@@ -145,7 +148,7 @@ export class FlowField {
         const n = neighbors[j];
 
         const idx = FlowField.getIndexForPos(field, n[0], n[1]);
-        if (dijkstraGrid[idx] === null){ // } && terrain.isWalkableAt(n[0], n[1])) {
+        if (dijkstraGrid[idx] === null && terrain.isWalkableAt(n[0], n[1])) {
           // const walkabilityWeight = FlowField.getCellNeighborPositions(field, n, true, 25)
           //   .reduce((prev, curr) => {
           //     if (!terrain.isWalkableAt(curr[0], curr[1])) {
@@ -155,9 +158,25 @@ export class FlowField {
           //     }
           //   }, 0);
 
+          // costs = costs.map((val, idx) => {
+          //   return val + Math.max(0, (1-(distances[idx] / (DISTANCE_FIELD_THRESHOLD))) * val);
+          // });
+
+          let val = current.distance + 1;
+          const add = DISTANCE_FIELD_THRESHOLD - distances[idx];
+          val += add;
+          // if(add < 0){
+          //   console.log('here..', idx, distances[idx], DISTANCE_FIELD_THRESHOLD, add);
+          //   debugger;
+          // }
+          // val += Math.min(1, Math.max(0, (1 - (distances[idx] / DISTANCE_FIELD_THRESHOLD)))) * (1000);
+
           // let thisCost = 1 + (terrain.isWalkableAt(n[0], n[1]) ? 0 : 1000);
           const neighborNode: DistNode = {
-            distance: current.distance + 1 + (terrain.valueAt(n[0], n[1]) * 10) , //   + (250*(1-Math.min(1, distances[idx] / DISTANCE_FIELD_THRESHOLD))),  //+ Math.max(0, (1-(distances[idx] / (DISTANCE_FIELD_THRESHOLD)))*1000), // + walkabilityWeight,
+            distance: val, // current.distance + 1 + (1-(distances[idx] / DISTANCE_FIELD_THRESHOLD)),
+            // current.distance + 1 + (1-(distances[idx] / DISTANCE_FIELD_THRESHOLD)),
+
+
             index: idx,
             position: n,
           };
@@ -187,9 +206,9 @@ export class FlowField {
         let lowestCost = Infinity;
         let lowestNeighbor = null;
         for (let j = 0; j < neighbors.length; j++) {
-          // if (!terrain.isWalkableAt(neighbors[j][0], neighbors[j][1])) {
-          //   continue;
-          // }
+          if (!terrain.isWalkableAt(neighbors[j][0], neighbors[j][1])) {
+            continue;
+          }
 
           let neighborIdx = FlowField.getIndexForPos(field, neighbors[j][0], neighbors[j][1]);
           let neighborCost = costs[neighborIdx];
@@ -239,12 +258,12 @@ export class FlowField {
 
       if (cachedData) {
         try {
-          const loadedDistances = JSON.parse(LZString.decompress(cachedData) || 'null');
+          const loadedDistances = JSON.parse(LZString.decompressFromBase64(cachedData));
           if (loadedDistances){
             res(loadedDistances);
             return;
           } else {
-            console.log('No distance loaded, but key present. Contents: ' + cachedData.slice(0, 25) + (cachedData.length > 25 ? '...' : ''));
+            console.log('No distance loaded, but key present. Contents: ' + cachedData.slice(0, 25) + (cachedData.length > 25 ? '...' : ''), loadedDistances);
           }
         } catch (err) {
           console.log('Error loading saved distances!', err);
@@ -270,6 +289,7 @@ export class FlowField {
           let tracked: any = {
             [`${openList[0].toString()}`]: true,
           };
+          const currIdx = FlowField.getIndexForPos(field, x, y);
 
           while (!foundTerrain && openList.length) {
             next = openList.shift();
@@ -278,11 +298,11 @@ export class FlowField {
             dist = (((x - nX) * (x - nX)) + ((y - nY) * (y - nY)));
 
             if (dist > threshold || !terrain.isWalkableAt(nX, nY)) {
+              dist = threshold;
               openList.length = 0;
               foundTerrain = true;
             } else {
-              const neighbs = FlowField.getCellNeighborPositions(field, next, true, DISTANCE_FIELD_GRANULARITY)
-                .map(val => [val[0], val[1]])
+              const neighbs = FlowField.getCellNeighborPositions(field, next, false, DISTANCE_FIELD_GRANULARITY)
                 .filter(val => !tracked.hasOwnProperty(val.toString()));
 
               for(const idx in neighbs){
@@ -293,7 +313,7 @@ export class FlowField {
             }
           }
 
-          distances[FlowField.getIndexForPos(field, x, y)] = dist;
+          distances[currIdx] = dist; // (distances[currIdx] || 0) + dist;
         }
 
         if (y % 5 === 0) {
@@ -310,49 +330,42 @@ export class FlowField {
 
       let smoothedDistances = FlowField.reset1dArrayValues<number>([], field.width, field.height, 0);
 
-      const smoothRange = 0; // 25;
+      const smoothRange = 4; // 25;
+      const smoothTimes = 1;
 
-      // smooth them all. ugh
-      for (let idx = 0; idx < distances.length; idx++) {
-        let pos = FlowField.getPosForIndex(field, idx);
-        let val = distances[idx];
-        let neighIdx;
-        // let neighCost;
-        let neighb;
+      for(let iter = 0; iter < smoothTimes; iter++){
+        // smooth them all. ugh
+        for (let idx = 0; idx < distances.length; idx++) {
+          let pos = FlowField.getPosForIndex(field, idx);
+          let val = distances[idx];
+          let neighIdx;
+          // let neighCost;
+          let neighb;
 
-        for (let y = -smoothRange; y <= smoothRange; y++) {
-          for (let x = -smoothRange; x <= smoothRange; x++) {
-            if (x === 0 && y === 0) { continue; }
-            neighb = [pos[0] + x, pos[1] + y]
+          for (let y = -smoothRange; y <= smoothRange; y++) {
+            for (let x = -smoothRange; x <= smoothRange; x++) {
+              // if (x === 0 && y === 0) { continue; }
+              neighb = [pos[0] + x, pos[1] + y]
 
-            if (neighb[0] <= 0 || neighb[0] >= field.width || neighb[1] <= 0 || neighb[1] >= field.height) {
-              // val = (val + 0) / 2;
-              val = lerp(val, 0, 0.5);
-              continue;
-            } else {
-              neighIdx = FlowField.getIndexForPos(field, neighb[0], neighb[1]);
-              val = lerp(val, distances[neighIdx], 0.5);
-              // val = (val + distances[neighIdx]) / 2;
+              if (neighb[0] < 0 || neighb[0] >= field.width || neighb[1] < 0 || neighb[1] >= field.height) {
+                // val = (val + 0) / 2;
+                // val = lerp(val, 0, 0.5);
+                continue;
+              } else {
+                neighIdx = FlowField.getIndexForPos(field, neighb[0], neighb[1]);
+                // val = lerp(val, distances[neighIdx], 0.5);
+                val = (val + distances[neighIdx]) / 2;
+              }
             }
           }
+
+          smoothedDistances[idx] = val;
         }
-
-
-        // FlowField.getCellNeighborPositions(field, Vector.get(pos), true, 1)
-        // .forEach(neighb => {
-        //   neighIdx = FlowField.getIndexForPos(field, neighb[0], neighb[1]);
-        //   neighCost = distances[neighIdx] || 65535;
-        //   val = lerp(val, neighCost, 0.5);
-        // })
-        // if(isNaN(val)){
-        //   debugger;
-        //   val = distances[idx];
-        // }
-        smoothedDistances[idx] = val;
       }
 
 
-      localStorage.setItem(`${TERRAIN_SEED},${terrain.width},${terrain.height}`, LZString.compress(JSON.stringify(smoothedDistances)));
+
+      localStorage.setItem(`${TERRAIN_SEED},${terrain.width},${terrain.height}`, LZString.compressToBase64(JSON.stringify(smoothedDistances)));
       res(smoothedDistances);
     });
   }
@@ -367,12 +380,12 @@ export class FlowField {
 
 
     console.time('distances');
-    const distances = await FlowField.calculateDistanceField(field, terrain);
-
-    const maxDist = distances.reduce((prev, curr) => {
-      return prev > curr ? prev : curr;
-    }, -Infinity);
-    console.log('max dist =', Math.sqrt(maxDist));
+    // const distances = await FlowField.calculateDistanceField(field, terrain);
+    const distances = FlowField.reset1dArrayValues<number>([], field.width, field.height, 0);
+    // const maxDist = distances.reduce((prev, curr) => {
+    //   return prev > curr ? prev : curr;
+    // }, -Infinity);
+    // // console.log('max dist =', Math.sqrt(maxDist));
 
     console.timeEnd('distances');
 
@@ -381,15 +394,14 @@ export class FlowField {
     console.timeEnd('cost');
 
 
-    costs = costs.map((val, idx) => {
-      return val + Math.max(0, (1-(distances[idx] / (DISTANCE_FIELD_THRESHOLD)))*DISTANCE_WEIGHT);  //((1 - (distances[idx] / maxDist)) * 500);
-    });
+    // costs = costs.map((val, idx) => {
+    //   return val + Math.max(0, (1-(distances[idx] / (DISTANCE_FIELD_THRESHOLD))) * (val * 5));
+    // });
 
     console.time('flows');
     const flows = await FlowField.calculateFlows(field, terrain, costs);
     console.timeEnd('flows');
 
-    /**  TODO: Add the breadth-first algo which builds out flow field **/
 
     return {
       cellCosts: costs,

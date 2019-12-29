@@ -14,3 +14,5 @@ export type DisplayTrait = PositionTrait & {
 	size: number;
 	color: string;
 }
+
+export type ItemID = number;

@@ -62,6 +62,7 @@ export class TerrainDisplay {
     for (let y = 0; y < SCREEN_HEIGHT; y += CELL_SIZE) {
       for (let x = 0; x < SCREEN_WIDTH; x += CELL_SIZE) {
         let val = this.noise.perlin2(x * this.chaos, y * this.chaos);
+        if(val > this.walkableThreshold){ continue; }
         this.context.fillStyle = val < this.walkableThreshold ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255,0,0,0.25)';
         this.context.fillRect(x - (CELL_SIZE / 2), y - (CELL_SIZE / 2), CELL_SIZE, CELL_SIZE);
       }
