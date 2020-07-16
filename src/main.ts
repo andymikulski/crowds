@@ -28,9 +28,9 @@ terrain.drawGrid();
 
 const displayFlowFieldData = (data: FlowFieldData) => {
   // console.log('field generated', data);
-  displayCostVisual(data);
-  // displayDistanceVisual(data);
-  displayFlowVisual(data);
+  // displayCostVisual(data);
+  displayDistanceVisual(data);
+  // displayFlowVisual(data);
 }
 
 const displayFlowVisual = (data: FlowFieldData) => {
@@ -77,7 +77,7 @@ const displayCostVisual = (data: FlowFieldData) => {
   canvas.height = SCREEN_HEIGHT;
   const ctx = canvas.getContext('2d');
   let cost;
-  let maxCost = data.cellCosts.reduce((prev, curr) => {
+  let maxCost = data.costCells.reduce((prev, curr) => {
     return prev > curr ? prev : curr;
   }, -Infinity);
   console.log('max cost =', maxCost);
@@ -129,29 +129,42 @@ const makeSpatialHashDisplay = () => {
   hashCtx = canvas.getContext('2d');
   document.body.insertBefore(canvas, document.body.firstChild);
 };
-const updateHashDisplay = (hash: SpatialHash) => {
+const updateHashDisplay = (agentMan: AgentManager, hash: SpatialHash) => {
   hashCtx.clearRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
   // const slices = SCREEN_WIDTH / hash.cellSize;
 
-  let count;
-  let val;
-      hashCtx.strokeStyle = `rgba(0, 0, 0, 0.15)`;
-  for (let y = hash.cellSize / 2; y < SCREEN_HEIGHT; y += hash.cellSize) {
-    for (let x = hash.cellSize / 2; x < SCREEN_WIDTH; x += hash.cellSize) {
-      count = hash.getNeighborsForPosition([x, y]).length;
-      val = count / (NUM_AGENTS / (hash.cellSize / 2)) ; // (hash.cellSize / 4);
-      // if(val < 0.05){ continue; }
-      hashCtx.beginPath();
-      // hashCtx.strokeStyle = `rgba(0, 0, 0, ${val})`;
-      hashCtx.fillStyle = `rgba(${255 * val}, 0, 0, 0.25)`; //  ${count / NUM_AGENTS})`;
-      hashCtx.rect(x - (hash.cellSize / 2), y - (hash.cellSize / 2), hash.cellSize, hash.cellSize);
-
-      hashCtx.fill();
-      hashCtx.stroke();
-      hashCtx.closePath();
-      // hashCtx.strokeRect(x - (hash.cellSize / 2), y- (hash.cellSize / 2), hash.cellSize, hash.cellSize);
-    }
+  let markedBuckets: any = {};
+  for (let i = 0; i < NUM_AGENTS; i++) {
+    hash.getBucketIndices(agentMan.agents[i].position)
+      .forEach(idx => {
+        markedBuckets[idx] = hash.getBucketPositionForIndex(idx);
+      })
   }
+  Object.values(markedBuckets)
+    .forEach(([x, y]) => {
+      hashCtx.strokeRect(x - (hash.cellSize / 2), y - (hash.cellSize / 2), hash.cellSize, hash.cellSize);
+    });
+
+
+  // let count;
+  // let val;
+  // hashCtx.strokeStyle = `rgba(0, 0, 0, 0.15)`;
+  // for (let y = hash.cellSize / 2; y < SCREEN_HEIGHT; y += hash.cellSize) {
+  //   for (let x = hash.cellSize / 2; x < SCREEN_WIDTH; x += hash.cellSize) {
+  //     count = hash.getAgentsAtBucket([x, y]).length;
+  //     val = count / (NUM_AGENTS / (hash.cellSize / 2)) ; // (hash.cellSize / 4);
+  //     // if(val < 0.05){ continue; }
+  //     hashCtx.beginPath();
+  //     // hashCtx.strokeStyle = `rgba(0, 0, 0, ${val})`;
+  //     hashCtx.fillStyle = `rgba(${255 * val}, 0, 0, 0.25)`; //  ${count / NUM_AGENTS})`;
+  //     hashCtx.rect(x - (hash.cellSize / 2), y - (hash.cellSize / 2), hash.cellSize, hash.cellSize);
+
+  //     hashCtx.fill();
+  //     hashCtx.stroke();
+  //     hashCtx.closePath();
+  //     // hashCtx.strokeRect(x - (hash.cellSize / 2), y- (hash.cellSize / 2), hash.cellSize, hash.cellSize);
+  //   }
+  // }
 }
 
 
@@ -172,7 +185,18 @@ gui.add(AgentManager.WEIGHTS, 'cohesion', 0, 5, 0.05);
 const run = async () => {
   console.time('flowField');
   // const testFlow = await FlowField.generate(terrain, [SCREEN_WIDTH, SCREEN_HEIGHT_HALF])
-  const testFlow = await FlowField.generate(terrain, [SCREEN_WIDTH, SCREEN_HEIGHT_HALF])
+
+  let target: Vector;
+  let offset = 0;
+  do {
+    target = [SCREEN_WIDTH, SCREEN_HEIGHT_HALF + offset];
+    offset += 10;
+    if (SCREEN_HEIGHT_HALF + offset > SCREEN_HEIGHT) {
+      throw new Error('No target possible');
+    }
+  } while (!terrain.isWalkableAt(target[0], target[1]));
+
+  const testFlow = await FlowField.generate(terrain, target)
   console.timeEnd('flowField');
   displayFlowFieldData(testFlow);
 
@@ -202,7 +226,7 @@ const run = async () => {
     _flagged = true;
 
     requestIdleCallback(() => {
-      updateHashDisplay(agentMan.locationHash);
+      updateHashDisplay(agentMan, agentMan.locationHash);
       _flagged = false;
     });
   }
@@ -210,7 +234,7 @@ const run = async () => {
   const stepWorld = () => {
     agentMan.tick();
     disp.draw(agentMan.agents, agentMan.agentCount, 0);
-    // updateHashDisplay(agentMan.locationHash);
+    // updateHashDisplay(agentMan, agentMan.locationHash);
     // flagUpdate();
     requestAnimationFrame(stepWorld);
   };

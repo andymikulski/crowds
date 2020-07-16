@@ -62,7 +62,7 @@ export default class PerlinNoise {
       seed *= 65536;
     }
 
-    seed = Math.floor(seed);
+    seed = (seed) | 0;
     if (seed < 256) {
       seed |= seed << 8;
     }
@@ -87,8 +87,8 @@ export default class PerlinNoise {
     var n0, n1, n2; // Noise contributions from the three corners
     // Skew the input space to determine which simplex cell we're in
     var s = (xin + yin) * F2; // Hairy factor for 2D
-    var i = Math.floor(xin + s);
-    var j = Math.floor(yin + s);
+    var i = (xin + s) | 0;
+    var j = (yin + s) | 0;
     var t = (i + j) * G2;
     var x0 = xin - i + t; // The x,y distances from the cell origin, unskewed.
     var y0 = yin - j + t;
@@ -148,9 +148,9 @@ export default class PerlinNoise {
 
     // Skew the input space to determine which simplex cell we're in
     var s = (xin + yin + zin) * F3; // Hairy factor for 2D
-    var i = Math.floor(xin + s);
-    var j = Math.floor(yin + s);
-    var k = Math.floor(zin + s);
+    var i = (xin + s) | 0;
+    var j = (yin + s) | 0;
+    var k = (zin + s) | 0;
 
     var t = (i + j + k) * G3;
     var x0 = xin - i + t; // The x,y distances from the cell origin, unskewed.
@@ -232,7 +232,7 @@ export default class PerlinNoise {
 
   perlin2(x: number, y: number) {
     // Find unit grid cell containing point
-    var X = Math.floor(x), Y = Math.floor(y);
+    var X = (x | 0), Y = (y | 0);
     // Get relative xy coordinates of point within that cell
     x = x - X; y = y - Y;
     // Wrap the integer cells at 255 (smaller integer period can be introduced here)
@@ -256,7 +256,7 @@ export default class PerlinNoise {
 
   perlin3(x: number, y: number, z: number) {
     // Find unit grid cell containing point
-    var X = Math.floor(x), Y = Math.floor(y), Z = Math.floor(z);
+    var X = (x | 0), Y = (y | 0), Z = (z | 0);
     // Get relative xyz coordinates of point within that cell
     x = x - X; y = y - Y; z = z - Z;
     // Wrap the integer cells at 255 (smaller integer period can be introduced here)

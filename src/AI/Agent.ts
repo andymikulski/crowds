@@ -12,6 +12,10 @@ import {
   MIN_SPEED,
   MAX_SPEED,
   MAX_FORCE,
+  AGENT_FOV,
+  AGENT_FOV_RADS,
+  AGENT_FOV_HALF_RADS,
+  AGENT_FOV_RANGE_SQUARED,
 } from "../config";
 import { PositionTrait, MotionTrait, DisplayTrait, ItemID } from '../traits';
 import { FlockBehavior } from './Flock';
@@ -73,20 +77,20 @@ export class AgentManager {
   }
 
   private agentFilter(agent: Agent) {
-    let area = 15 * 15;
     return (other: Agent) => {
       return other !== agent
-        && VecMath.squaredDist(agent.position, other.position) < area
-        && this.isInAgentsFOV(agent, other)
+      // && VecMath.squaredDist(agent.position, other.position) < AGENT_FOV_RANGE_SQUARED
+      // && this.isInAgentsFOV(agent, other)
     };
   }
 
   getNearbyAgents(agent: Agent) {
 
-    return this.locationHash.getNeighborsForPosition(agent.position)
+    return this.locationHash.getNeighboringIDsAtPos(agent.position)
       .map((neighborIdx: number) => {
         return this.agents[neighborIdx];
-      });
+      })
+      .filter(this.agentFilter(agent));
 
     // let area = Math.max(1, agent.currentSpeed) * 5;
     // area *= area;
@@ -109,9 +113,10 @@ export class AgentManager {
     // const dirTowardsOther = currPos.sub(otherPos).normalize();
 
     //Check angle
-    const angle = Math.acos(VecMath.dot(currDirection, dirTowardsOther)) * (180 / Math.PI);
+    const angle = Math.acos(VecMath.dot(currDirection, dirTowardsOther)); //  * (180 / Math.PI);
 
-    return isNaN(angle) ? false : angle > 45 && angle < 135;
+    const found = isNaN(angle) ? false : angle > -AGENT_FOV_HALF_RADS && angle < AGENT_FOV_HALF_RADS;
+    return found;
   }
 
   private _neighbors: Agent[];
